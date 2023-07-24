@@ -297,6 +297,7 @@ btn.addEventListener("click", function () {
 const cont = getCountry("usa");
 console.log(cont);
 
+// Возврат данных через .then.catch
 getCountry("usa")
   .then(function (response) {
     console.log(response);
@@ -305,6 +306,7 @@ getCountry("usa")
     console.log(err);
   });
 
+// Возврат данных с помощью async/awiat
 (async function () {
   try {
     const city = await getCountry("usa");
@@ -315,32 +317,48 @@ getCountry("usa")
 })();
 
 /* 
-todo 13-15 Возврат данных из async await
-Поговорим как возвращать данные из async/await
-Допустим нужно получить данные из нашей async функции getCountry
-Т.е. воспользоваться в конце функции словом return и в этот return получить какие-либо данные, которые приходят с удаленного сервера, допустим получить данные той страны, где находимся
-return `Ваша страна ${data[0].name.common}`;
-const cont = getCountry("usa");
-console.log(cont);
+todo 13-16 Параллельное выполнение promises
+МЕТОД для Promise.ALL
+Позволяет загрузить асинхронные данные синхронно
+Для ситуаций, когда запустили несколько promise, но они должны выполняться в одно и то же время, т.е. работать параллельно
+! Когда используешь async/await обязательно используй try catch
 
-Но в таком варианте мы получаем в консоли : Promise {<pending>}
-Т.е. мы хотели строчку, а вернулся Promise и к тому же в режиме обработки.
-
-! Важно понимать, когда используем async к функции, то создаю Promise, а Promise возвращает всегда Promise
-Чтобы получить именно строку текста, нужно использовать метод then к результату функции
-
-getCountry("usa").then(function (response) {
-  console.log(response);
-});
-Вот тогда будет строка "Ваша страна United States"
-
-А что если мы допустили ошибку в названии страны, то код getCountry даже не дойдет до return `Ваша страна ...`
-Тогда нужно эту ошибку отловить в catch
-А в вызове функции, где писали then, дописать catch
-
-Но то, что написали не вписывается в синтаксис async / await
-
-Сделаем анонимную функцию, которую на месте и запустим. Перепишем код getCountry("usa").then.catch в синтаксис async/await
-
-Ответ вышел одинаковым 
+Получили 3 массива с названиями столиц
+В консоли видно, что данные запрашиваются по очереди и на трафик тратится порядка 300-500 мс, почти полсекунды на каждый запрос.
+Но нам не нужно, чтобы они выполнялись по очереди, это долго
+А как сделать их одновременно?!
+Используем метод Promise.All
+Метод All в массив принимает запросы, которые будут выполняться одновременно. Создадим эти запросы
+Теперь все загрузилось в одно и то же время
 */
+async function get3Capital(c1, c2, c3) {
+  try {
+    // const response1 = await fetch(`https://restcountries.com/v3.1/name/${c1}`);
+    // const [data1] = await response1.json();
+
+    // const response2 = await fetch(`https://restcountries.com/v3.1/name/${c2}`);
+    // const [data2] = await response2.json();
+
+    // const response3 = await fetch(`https://restcountries.com/v3.1/name/${c3}`);
+    // const [data3] = await response3.json();
+
+    const data = await Promise.all([
+      fetch(`https://restcountries.com/v3.1/name/${c1}`).then((res) =>
+        res.json()
+      ),
+      fetch(`https://restcountries.com/v3.1/name/${c2}`).then((res) =>
+        res.json()
+      ),
+      fetch(`https://restcountries.com/v3.1/name/${c3}`).then((res) =>
+        res.json()
+      ),
+    ]);
+    const dataAll = data.map(function (val) {
+      return val[0].capital[0];
+    });
+    console.log(dataAll);
+  } catch (err) {
+    console.log(err);
+  }
+}
+get3Capital("belarus", "russia", "turkey");
