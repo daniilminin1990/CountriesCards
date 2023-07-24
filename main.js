@@ -220,152 +220,31 @@ btn.addEventListener("click", function () {
 });
 
 /* 
-todo 13-10 Что такое промисификация
-создадим отдельно свой промис
-Работает синхронно.
-Чтобы симулировать асинхронность, сделаем задержку
-В таком случае в Promise будет <pending>, а результата не будет. Если раскроем его, то он будет с этим результатом постоянно. Но если нажмем на него через 2 секунды, то резульат изменится 
-Т.е. в начале, пока не получили результата, промис находится в состоянии undefined, он дожидается результата
-Именно поэтому мы используем метод then для нашего промиса. И LotteryTicket сработает только тогда, когда будет результат resolve или reject
-Дополним код 
-lotteryTicket.then(function (res) {
-  console.log(res);
-});
-При положительном результате в консоли через 2 сек появится win, и PromiseState = fulfilled
-А если негативный, то будет ошибка, lose не появится, а в PromiseState = rejected.
+todo 13-11 Очередь выполнения кода
+Очередь загрузки скриптов, загрузки и выполнения его движком JS
 
-Для этого и нужен catch - вылавливать ошибки
-После catch появляется результат в консоли, даже если отрицательный результат
-
-Промисы позволяют работать с отложенным кодом, не заставляя останавливаться другой код
-У промисов есть колбэк функция с 2 параметрами(2 состояния по итогу):
-1) положительный ответ от сервера
-2) негативный
-В случае с сервером первый then - чтобы получить данные в нужном нам формате, вернуть их как новый промис
-С помощью последнего then - получали результат этих преобразованных данных
-Catch - отлавливаем эту ошибку
-
-* Промисификация - превращение кода, который основан на колбэках, в более удобную структуру 
-
-Например создадим callBack HELL, чтобы посмотреть
-Например setTimeout на 6 сек
-
-setTimeout(function () {
-  console.log("Прошла 1 сек");
-  setTimeout(() => {
-    console.log("Прошло 2 сек");
-    setTimeout(() => {
-      console.log("Прошло 3 сек");
-      setTimeout(() => {
-        console.log("Прошло 4 сек");
-        setTimeout(() => {
-          console.log("Прошло 5 сек");
-          setTimeout(() => {
-            console.log("Прошло 6 сек");
-          }, 1000);
-        }, 1000);
-      }, 1000);
-    }, 1000);
-  }, 1000);
-}, 1000);
-
-Для упрощения, т.е. для промисификации, создадим функцию function wait(seconds){}
-
-function wait(seconds) {
-  return new Promise(function (resolve, reject) {
-    setTimeout(resolve, seconds * 1000);
-  });
-}
-
-wait(2)
-  .then(function () {
-    console.log("Вы ждали 2 сек");
-    return wait(1);
-  })
-  .then(function () {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-
-Тем самым мы получаем ровную простыню
+Последовательность задач
+Язык JavaScript выполняет все задачи по очереди
+В движке не реализован процев, в котором 2 разные задачи выполняются одновременно
+Это значит, что никакой асинхронности в прямом представлении в языке нет
+Как же тогда работает асинхронность в JS? Почему, если движок не может выполнять
+несколько задач одновременно, наш код не зависает пока ждет данный от удаленного
+сервера?
+Давайте разберемся в шагах работы движка, то есть в событийном цикле:
+Идея событийного цикла очень проста:
+Есть бесконечный цикл, в котором движок JavaScript ожидает задачи, исполняет их и
+снова ожидает появления новых
+Общий алгоритм движка:
+1. Пока есть задачи — выполнить их, начиная с самой старой
+2. Бездействовать до появления новой задачи, а затем перейти к пункту 1
 */
 
-const lotteryTicket = new Promise(function (resolve, reject) {
-  setTimeout(() => {
-    if (Math.random() >= 0.5) {
-      resolve("win");
-    } else {
-      reject("lose");
-    }
-  }, 2000);
-});
-
-lotteryTicket
-  .then(function (res) {
-    console.log(lotteryTicket);
-    console.log(res);
-  })
-  .catch(function (err) {
-    console.error(err);
-  });
-
-console.log(lotteryTicket); // Promise {<rejected>: 'lose'} \n Uncaught (in promise) lose
-
+console.log("Test start");
 setTimeout(function () {
-  console.log("Прошла 1 сек");
-  setTimeout(() => {
-    console.log("Прошло 2 сек");
-    setTimeout(() => {
-      console.log("Прошло 3 сек");
-      setTimeout(() => {
-        console.log("Прошло 4 сек");
-        setTimeout(() => {
-          console.log("Прошло 5 сек");
-          setTimeout(() => {
-            console.log("Прошло 6 сек");
-          }, 1000);
-        }, 1000);
-      }, 1000);
-    }, 1000);
-  }, 1000);
-}, 1000);
+  console.log("0 sec timer");
+}, 0);
 
-function wait(seconds) {
-  return new Promise(function (resolve, reject) {
-    setTimeout(resolve, seconds * 1000);
-  });
-}
-
-wait(2)
-  .then(function () {
-    console.log("Вы ждали 2 сек");
-    return wait(1);
-  })
-  .then(function () {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  })
-  .then(() => {
-    console.log("Вы ждали еще 1 сек");
-    return wait(1);
-  });
+Promise.resolve("Resolved promise").then(function (res) {
+  console.log(res);
+});
+console.log("Test end");
