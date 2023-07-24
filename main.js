@@ -5,18 +5,18 @@ const countriesContainer = document.querySelector(".countries");
 
 ///////////////////////////////////////
 
-const request1 = new XMLHttpRequest();
-request1.open("GET", "https://meowfacts.herokuapp.com/?count=3");
-request1.send();
+// const request1 = new XMLHttpRequest();
+// request1.open("GET", "https://meowfacts.herokuapp.com/?count=3");
+// request1.send();
 
-request1.addEventListener("load", function () {
-  const data = JSON.parse(request1.responseText);
-  console.log(data);
-  const [text1, text2, text3] = data.data;
-  console.log(text1);
-  console.log(text2);
-  console.log(text3);
-});
+// request1.addEventListener("load", function () {
+//   const data = JSON.parse(request1.responseText);
+//   console.log(data);
+//   const [text1, text2, text3] = data.data;
+//   console.log(text1);
+//   console.log(text2);
+//   console.log(text3);
+// });
 
 // Функция запроса данных стран создает карточки + рендер карточки на странице
 // function getCountryData(country) {
@@ -215,9 +215,9 @@ function getCountryData(country) {
     .finally(() => (countriesContainer.style.opacity = 1));
 }
 
-btn.addEventListener("click", function () {
-  getCountryData("australia");
-});
+// btn.addEventListener("click", function () {
+//   getCountryData("australia");
+// });
 
 /* 
 todo 13-12 Промисификация часть 2
@@ -274,7 +274,7 @@ new Promise(function (resolve, reject) {
     // Если нужно вернуть какие-т о данные для другого API, можем дальше return ... ).then и пошла возня
   });
 
-// Async/Await
+// * Async/Await
 async function getCountry(country) {
   try {
     const res = await fetch(`https://restcountries.com/v3.1/name/${country}`);
@@ -282,44 +282,65 @@ async function getCountry(country) {
       throw new Error("У вас нет интернета");
     }
     const data = await res.json();
-    console.log(data);
+
+    return `Ваша страна ${data[0].name.common}`;
   } catch (err) {
-    console.log(err);
+    throw new Error("Что-то пошло не так");
   }
 }
 // getCountry("usa");
 
 btn.addEventListener("click", function () {
-  getCountry("ussdfsa");
+  getCountry("usa");
 });
 
-// Что лучше? То что тут, по старому fetch....then....then или код выше
-// function getCountry1(country) {
-//   fetch(`https://restcountries.com/v3.1/name/${country}`)
-//     .then((response) => response.json())
-//     .then((data) => console.log(data));
-// }
-// getCountry1("usa");
+const cont = getCountry("usa");
+console.log(cont);
+
+getCountry("usa")
+  .then(function (response) {
+    console.log(response);
+  })
+  .catch(function (err) {
+    console.log(err);
+  });
+
+(async function () {
+  try {
+    const city = await getCountry("usa");
+    console.log(city);
+  } catch (err) {
+    console.log(err);
+  }
+})();
 
 /* 
-todo 13-14 Обработка ошибок try catch
-Поговорим про отлавливание ошибок, когда используем async/await
-try catch работает как if else
-try {попробуй код} catch(err) {console.log(err)}
-Ошибка отобразится в консоли, но не как красное уведомление и код не ломается
-try {
-  let x = 1;
-  const y = 2;
-  y = 4;
-} catch (err) {
-  console.log(err); // TypeError: Assignment to constant variable.
-}
-Теперь поработаем с предыдущим кодом. после Async сделаем try catch и отключим интернет
-Скопируем код обработчика событий для кнопки и вставим сюда
-После отключения интернета да, код не ломается, ошибка обрабатывается и получаем вид ошибки в консоли
+todo 13-15 Возврат данных из async await
+Поговорим как возвращать данные из async/await
+Допустим нужно получить данные из нашей async функции getCountry
+Т.е. воспользоваться в конце функции словом return и в этот return получить какие-либо данные, которые приходят с удаленного сервера, допустим получить данные той страны, где находимся
+return `Ваша страна ${data[0].name.common}`;
+const cont = getCountry("usa");
+console.log(cont);
 
-Смоделируем ситуацию, когда неправильно указано название страны, т.е. ошибка 404, try catch ее не обрабатывает
-Тогда нужно воспользоваться пробросом ошибки throw Error
-будем писать условием внутри try
-При неправильном названии страны покажет "У вас нет интернета"
+Но в таком варианте мы получаем в консоли : Promise {<pending>}
+Т.е. мы хотели строчку, а вернулся Promise и к тому же в режиме обработки.
+
+! Важно понимать, когда используем async к функции, то создаю Promise, а Promise возвращает всегда Promise
+Чтобы получить именно строку текста, нужно использовать метод then к результату функции
+
+getCountry("usa").then(function (response) {
+  console.log(response);
+});
+Вот тогда будет строка "Ваша страна United States"
+
+А что если мы допустили ошибку в названии страны, то код getCountry даже не дойдет до return `Ваша страна ...`
+Тогда нужно эту ошибку отловить в catch
+А в вызове функции, где писали then, дописать catch
+
+Но то, что написали не вписывается в синтаксис async / await
+
+Сделаем анонимную функцию, которую на месте и запустим. Перепишем код getCountry("usa").then.catch в синтаксис async/await
+
+Ответ вышел одинаковым 
 */
