@@ -220,31 +220,56 @@ btn.addEventListener("click", function () {
 });
 
 /* 
-todo 13-11 Очередь выполнения кода
-Очередь загрузки скриптов, загрузки и выполнения его движком JS
-
-Последовательность задач
-Язык JavaScript выполняет все задачи по очереди
-В движке не реализован процев, в котором 2 разные задачи выполняются одновременно
-Это значит, что никакой асинхронности в прямом представлении в языке нет
-Как же тогда работает асинхронность в JS? Почему, если движок не может выполнять
-несколько задач одновременно, наш код не зависает пока ждет данный от удаленного
-сервера?
-Давайте разберемся в шагах работы движка, то есть в событийном цикле:
-Идея событийного цикла очень проста:
-Есть бесконечный цикл, в котором движок JavaScript ожидает задачи, исполняет их и
-снова ожидает появления новых
-Общий алгоритм движка:
-1. Пока есть задачи — выполнить их, начиная с самой старой
-2. Бездействовать до появления новой задачи, а затем перейти к пункту 1
+todo 13-12 Промисификация часть 2
+Избавимся от navigator API в синтаксис промисов и избавимся от callbackов в callbackах
 */
+// navigator.geolocation.getCurrentPosition(
+//   function (position) {
+//     const { latitude } = position.coords;
+//     const { longitude } = position.coords;
+//     // Используем API для обратной геолокации
+//     fetch(
+//       `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=421447806752157919442x96444`
+//     )
+//       .then(function (response) {
+//         if (!response.ok) {
+//           throw new Error(`Что-то пошло не так. (${response.status})`);
+//         }
+//         return response.json();
+//       })
+//       .then((result) => {
+//         const country = result.country;
+//         // Чтобы вставить в API для определения страны, сделаем вернем новый fetch запрос о стране
+//         return fetch(`https://restcountries.com/v3.1/name/${country}`);
+//       })
+//       .then((response) => response.json())
+//       .then((data) => {
+//         console.log(data);
+//         renderCards(data[0]);
+//       })
+//       .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
+//       .finally(() => (countriesContainer.style.opacity = 1));
+//   },
+//   function () {
+//     alert("Вы не предоставили доступ к своей локации");
+//   }
+// );
 
-console.log("Test start");
-setTimeout(function () {
-  console.log("0 sec timer");
-}, 0);
-
-Promise.resolve("Resolved promise").then(function (res) {
-  console.log(res);
-});
-console.log("Test end");
+// Перепишем этот код, используя промисификацию
+new Promise(function (resolve, reject) {
+  // navigator.geolocation.getCurrentPosition(
+  //   function (position) {
+  //     resolve(position);
+  //   },
+  //   function (err) {
+  //     reject(err);
+  //   }
+  // );
+  navigator.geolocation.getCurrentPosition(resolve, reject); // Т.е. говорим промису - запиши в result результат выполнения getCurrentPosition, а в reject при отрицательном
+})
+  // Так создали промис. Теперь обратимся к pos + используем then
+  .then(function (data) {
+    // В data будут лежать данные позитивного ответа
+    console.log(data);
+    // Если нужно вернуть какие-т о данные для другого API, можем дальше .then и пошла возня
+  });
