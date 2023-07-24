@@ -153,10 +153,61 @@ function renderCards(data, className = "") {
 // }
 // getCountryData("russia");
 
+// function getCountryData(country) {
+//   // Страна1
+//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
+//     .then((response) => response.json())
+//     .then((data) => {
+//       renderCards(data[0]);
+//       const neighbor = data[0].borders[0];
+//       console.log(neighbor);
+
+//       // Страна сосед
+//       return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
+//         .then(function (response) {
+//           return response.json();
+//         })
+//         .then(function (data) {
+//           const [res] = data;
+//           console.log(data); // получили страну соседа в формате массива
+//           console.log(res); // получили страну соседа в формате объекта
+//           renderCards(res, "neighbour");
+//         });
+//     });
+//   console.log(request);
+// }
+// getCountryData("usa");
+
 function getCountryData(country) {
+  // Страна1
   const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
     .then((response) => response.json())
-    .then((data) => renderCards(data[0]));
+    .then((data) => {
+      renderCards(data[0]);
+      const neighbor = data[0].borders[0];
+      console.log(neighbor);
+
+      // Страна сосед
+      return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const [res] = data;
+          console.log(data); // получили страну соседа в формате массива
+          console.log(res); // получили страну соседа в формате объекта
+          renderCards(res, "neighbour");
+        });
+    });
   console.log(request);
 }
-getCountryData("russia");
+getCountryData("usa");
+
+/* 
+todo 13-6 Как работает promise по цепочке
+Нам нужно вывести соседей на страницу
+Как избежать адской пирамиды вызовов с помощью fetch
+Во втором then лежат данные, которые мы получили от сервера и там лежат borders, страны соседи. Именно когда мы получили данные, мы можем запустить вторую callback функцию, которая будет генерировать соседа. Только после первой, так как вторая будет брать данные из первой (находить соседей). Поэтому во втором then, где запустили renderCards, запустим переменную const neighbour = data[0].borders[0], который unicode. Здесь же запускаем новый fetch, также как делали с XMLHttpRequest, создавали новый запрос, только здесь ссылку возьмем по unicode
+Но если мы будем дальше создавать fetch внутри then, то чем это будет отличаться от адской пирамиды вызовов? И действительно ничем. Поэтому нам нужно второй then превратить в fetch, то есть сделать return fetch. Тем самым у нас будет получен новый промис, который будет заполнен инфой с ссылки про соседа. А дальше также использовать .then(function(response){return response.json()}).then(function(data){console.log(data)}). Опять используем renderCards(data, "neighbor") // Но тут ошибка, формат SVG, вероятно из-за того, что мы не переводили/деструктуризировали в объект, так что перед renderCards сделаем доп переменную const [res] = data;
+
+Так избежали адской пирамиды вызовов, сделав цепь вызовов (then.then.renderCards-return fetch.then.then.renderCards)
+Перепишем код в стрелочный
+*/
