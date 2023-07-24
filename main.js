@@ -274,27 +274,24 @@ new Promise(function (resolve, reject) {
     // Если нужно вернуть какие-т о данные для другого API, можем дальше return ... ).then и пошла возня
   });
 
-/* 
-todo 13-13 Как работает async await
-Это еще один синтаксический сахар.
-Позволяет упростить работу с промисами, избавиться от лишних слов return и лишних callback и даже лишних методов.
-Эта надстройка появилась в районе 2017 года
-Async работает именно с ФУНКЦИЯМИ
-Async делает функцию асинхронной, т.е. не блокирует выполнение кода после функции
-Await работает с промисом, можно сказать заменяет then. И говорит "дождись ответ"
-В таком варианте мы получим результат, который получали после первого then, в формате JSON, который нужно конвертировать
-И можем воспользоваться json(), потом опять then, чтобы получить данные. Но у нас же есть await, поэтому применим его
-Для демонстрации что функция асинхронная, сделаем следующее:
-Перед ее объявлением выведем в консоль текст
-*/
 // Async/Await
 async function getCountry(country) {
-  const res = await fetch(`https://restcountries.com/v3.1/name/${country}`);
-  const data = await res.json();
-  console.log(data);
+  try {
+    const res = await fetch(`https://restcountries.com/v3.1/name/${country}`);
+    if (!res.ok) {
+      throw new Error("У вас нет интернета");
+    }
+    const data = await res.json();
+    console.log(data);
+  } catch (err) {
+    console.log(err);
+  }
 }
-console.log("Hello");
-getCountry("usa");
+// getCountry("usa");
+
+btn.addEventListener("click", function () {
+  getCountry("ussdfsa");
+});
 
 // Что лучше? То что тут, по старому fetch....then....then или код выше
 // function getCountry1(country) {
@@ -303,3 +300,26 @@ getCountry("usa");
 //     .then((data) => console.log(data));
 // }
 // getCountry1("usa");
+
+/* 
+todo 13-14 Обработка ошибок try catch
+Поговорим про отлавливание ошибок, когда используем async/await
+try catch работает как if else
+try {попробуй код} catch(err) {console.log(err)}
+Ошибка отобразится в консоли, но не как красное уведомление и код не ломается
+try {
+  let x = 1;
+  const y = 2;
+  y = 4;
+} catch (err) {
+  console.log(err); // TypeError: Assignment to constant variable.
+}
+Теперь поработаем с предыдущим кодом. после Async сделаем try catch и отключим интернет
+Скопируем код обработчика событий для кнопки и вставим сюда
+После отключения интернета да, код не ломается, ошибка обрабатывается и получаем вид ошибки в консоли
+
+Смоделируем ситуацию, когда неправильно указано название страны, т.е. ошибка 404, try catch ее не обрабатывает
+Тогда нужно воспользоваться пробросом ошибки throw Error
+будем писать условием внутри try
+При неправильном названии страны покажет "У вас нет интернета"
+*/
