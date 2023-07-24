@@ -271,5 +271,35 @@ new Promise(function (resolve, reject) {
   .then(function (data) {
     // В data будут лежать данные позитивного ответа
     console.log(data);
-    // Если нужно вернуть какие-т о данные для другого API, можем дальше .then и пошла возня
+    // Если нужно вернуть какие-т о данные для другого API, можем дальше return ... ).then и пошла возня
   });
+
+/* 
+todo 13-13 Как работает async await
+Это еще один синтаксический сахар.
+Позволяет упростить работу с промисами, избавиться от лишних слов return и лишних callback и даже лишних методов.
+Эта надстройка появилась в районе 2017 года
+Async работает именно с ФУНКЦИЯМИ
+Async делает функцию асинхронной, т.е. не блокирует выполнение кода после функции
+Await работает с промисом, можно сказать заменяет then. И говорит "дождись ответ"
+В таком варианте мы получим результат, который получали после первого then, в формате JSON, который нужно конвертировать
+И можем воспользоваться json(), потом опять then, чтобы получить данные. Но у нас же есть await, поэтому применим его
+Для демонстрации что функция асинхронная, сделаем следующее:
+Перед ее объявлением выведем в консоль текст
+*/
+// Async/Await
+async function getCountry(country) {
+  const res = await fetch(`https://restcountries.com/v3.1/name/${country}`);
+  const data = await res.json();
+  console.log(data);
+}
+console.log("Hello");
+getCountry("usa");
+
+// Что лучше? То что тут, по старому fetch....then....then или код выше
+// function getCountry1(country) {
+//   fetch(`https://restcountries.com/v3.1/name/${country}`)
+//     .then((response) => response.json())
+//     .then((data) => console.log(data));
+// }
+// getCountry1("usa");
