@@ -177,83 +177,101 @@ function renderError(message) {
 //   getCountryData("usa");
 // });
 
+//
 // Обработка ошибок через внешнюю функцию
 
-function getCountryData(country) {
-  // Страна1
+// function getCountryData(country) {
+//   // Страна1
 
-  function getJSON(url, errorMsg = "Что-то пошло не так.") {
-    return fetch(url).then(function (response) {
-      if (!response.ok) {
-        throw new Error(`${errorMsg}(${response.status})`);
-      }
-      return response.json();
-    });
-  }
+//   function getJSON(url, errorMsg = "Что-то пошло не так.") {
+//     return fetch(url).then(function (response) {
+//       if (!response.ok) {
+//         throw new Error(`${errorMsg}(${response.status})`);
+//       }
+//       return response.json();
+//     });
+//   }
 
-  const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
+//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
 
-  getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
-    .then((data) => {
-      renderCards(data[0]);
-      const neighbor = data[0].borders;
-      // const neighbor = "dfsfssgdsd";
-      if (!neighbor) {
-        throw new Error("Не найдено соседей");
-      }
-      // Страна сосед
-      return getJSON(
-        `https://restcountries.com/v3.1/alpha/${neighbor}`,
-        "Страна не найдена"
-      ).then((data) => {
-        const [res] = data;
-        renderCards(res, "neighbour");
-      });
-    })
-    .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
-    .finally(() => (countriesContainer.style.opacity = 1));
-}
+//   getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
+//     .then((data) => {
+//       renderCards(data[0]);
+//       const neighbor = data[0].borders;
+//       // const neighbor = "dfsfssgdsd";
+//       if (!neighbor) {
+//         throw new Error("Не найдено соседей");
+//       }
+//       // Страна сосед
+//       return getJSON(
+//         `https://restcountries.com/v3.1/alpha/${neighbor}`,
+//         "Страна не найдена"
+//       ).then((data) => {
+//         const [res] = data;
+//         renderCards(res, "neighbour");
+//       });
+//     })
+//     .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
+//     .finally(() => (countriesContainer.style.opacity = 1));
+// }
 
-btn.addEventListener("click", function () {
-  getCountryData("australia");
-});
+// btn.addEventListener("click", function () {
+//   getCountryData("australia");
+// });
 
 /* 
-todo 13-8 Обработка ошибок сервера
-Посмотрим на типы ошибок от сервера и как мы можем их отлавливать и сообщать пользователю что что-то пошло не так
-Посмотрим что содержит в себе переменная request
-Получаем promise, который записывается в переменную. Некий отложенный контейнер, который будет ждать определенных действий от создающего кода, т.е. от нашего сервера ( в данный момент находится в состоянии pending == ожидание). Т.к. нет данных, мы не можем передать в другой код, для его использования. Мы просто создали обещание того, что тогда, когда данные прогрузятся, в эту коробочку у нас они поместятся. Далее делаем метод then, который сработает тогда, когда сервер отдаст все наши данные и переместит их в промис. Там request уже содержит Promise {<fulfilled>: Response}, т.е. получили какие-то данные
-
-Если отключить интернет, то request будет pending, но PromiseState внутри == rejected
-
-После вызова request в консоль в первом then, выведем еще response. В request есть свойство body: ReadableStream. Такое же свойство есть у response в консоли. Это свойство содержит данные, которые получили от request. В первом then мы конвертировали данные из JSON в вид объекта. Во втором then мы продолжаем использовать эти данные
-
-Существует и другой вариант возникновения ошибки, не как в 13.7
-Допустим укажем несуществующую страну в getCountryData
-Получим ошибку 404 not found
-Когда смотрим в консоли на первый request в PromiseResult видим свойство ok: false, а status: 404
-GET https://restcountries.com/v3.1/name/usaasda 404 (Not Found)
-Вот справка по кодам ответа от сервера: https://developer.mozilla.org/ru/docs/Web/HTTP/Status
-Какие бывают кода и что они представляют.
-Так как ошибку мы обнаруживаем уже сразу в первом промисе, сделаем там магию, условие
-if (!response.ok) {
-  throw new Error(`Страна не найдена ${response.status}`);
-}
-Что мы тут написали?
-Если свойство response.ok == false, то нужно остановить выполнение кода и за это отвечает инструкция THROW(пробрось) (работает также как return - прекращает выполнение дальнейшего кода) и создает новый объект Error с помощью конструктора и эта ошибка будет с содержанием, написанным внутри (). И так как при ошибке мы получаем результат rejected, то у нас выполняется дальнейший метод catch, который выводит сообщение error, в которую и передается текст из if
-
-Теперь про соседа. Там же тоже может быть ошибка. Например также, страна не существует
-Вернем нормальное название страны в getCountryData, а в neighbor положим несуществующую страну
-Скопируем код if, вставим в первый then для второй страны
-Обратите внимание, код 400, а не 404, как было с первой страной
-
-Но если так оставить код, то видно, что у нас куски кода оч похожи друг на друга (первый then для каждой страны)
-Если карточек будет много, то код будет повторяться и раздражать
-
-Создадим функцию-помощник в getCountryData, назовем getJSON (url, "Страна не найдена")
-Подставим функцию в prmoise, вместо первого then для обеих стран
-
-Последнее о еще одной предполагаемой ошибке - существуют страны, у которых нет соседей. Например Австралия
-Сделаем то же самое, пропишем еще один if (!neighbor) {throw new Error("Не найдено соседей");}
-
+todo 13-9 Практика, появление карточки исходя из местоположения
+С помощью стороннего API получали координаты страны и использовали в API, который рендерит карточку
+Это эмуляция той задачи, которую дадут на работе
+Подсказки:
+1) Использовать API, встроенный в браузер, окошко, которое дает разрешение на определение моей геолокации. Скопировать координаты, вставить в другой API, который определит страну, а это значение вставить в наш выше написанный код
+Допустим координаты я получу, но вот как определить страну по координатам?! Ответа нет, идем в гугл
+https://geocode.xyz/api
+Там есть строка Reverse Geocoding
+curl 'https://geocode.xyz/51.50354,-0.12768?geoit=xml&auth=your_api_key'
+Нам понадобится только https, причем нужен правильный формат. Здесь написано, что формат XML. Поменяем на JSON.
+Но что после xml - запрос и какой-то api_key
+api_key это ключ, который можно получить после регистрации (и оплаты сервиса), который как раз вставляется после auth=. В бесплатной версии срабатывает запрос 1 раз в сек. В зарегистрированных - 10 раз в сек. Если оплатить - больше. 1 клик сколько-то стоит
+'https://geocode.xyz/51.50354,-0.12768?geoit=json&auth=421447806752157919442x96444'
 */
+
+// Определяем координаты. Считай по-новой все написали, только без кнопки
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    function (position) {
+      console.log(position);
+      const { latitude } = position.coords;
+      const { longitude } = position.coords;
+      console.log(latitude, longitude); // 51.0966193 71.4245694
+      console.log(`https://www.google.com/maps/@${latitude},${longitude}`); // https://www.google.com/maps/@51.0966193,71.4245694
+
+      // Используем API для обратной геолокации
+      fetch(
+        `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=421447806752157919442x96444`
+      )
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error(`Что-то пошло не так. (${response.status})`);
+          }
+          return response.json();
+        })
+        .then((result) => {
+          const country = result.country;
+          // Чтобы вставить в API для определения страны, сделаем вернем новый fetch запрос о стране
+          return fetch(`https://restcountries.com/v3.1/name/${country}`);
+        }) // здесь продолжим этот fetch через then
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+          renderCards(data[0]);
+        })
+        .catch((err) =>
+          renderError(`Что-то пошло не так из-за ошибки: ${err}.`)
+        )
+        .finally(() => (countriesContainer.style.opacity = 1));
+    },
+    function () {
+      alert("Вы не предоставили доступ к своей локации");
+    }
+  );
+}
