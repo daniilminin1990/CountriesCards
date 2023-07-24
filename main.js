@@ -136,7 +136,6 @@ function renderCards(data, className = "") {
 
   // Выводим на страницу карточку и убираем нулевую прозрачность
   countriesContainer.insertAdjacentHTML("beforeend", html);
-  countriesContainer.style.opacity = 1;
 }
 
 // function getCountryData(country) {
@@ -178,6 +177,10 @@ function renderCards(data, className = "") {
 // }
 // getCountryData("usa");
 
+function renderError(message) {
+  countriesContainer.insertAdjacentText("beforeend", message);
+}
+
 function getCountryData(country) {
   // Страна1
   const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
@@ -196,18 +199,62 @@ function getCountryData(country) {
           console.log(res); // получили страну соседа в формате объекта
           renderCards(res, "neighbour");
         });
-    });
+    })
+    .catch((err) =>
+      renderError(
+        `Что-то пошло не так из-за ошибки: ${err}. Попробуйте перезагрузить страницу или зайдите позже`
+      )
+    )
+    .finally(() => (countriesContainer.style.opacity = 1));
   console.log(request);
 }
-getCountryData("usa");
+// getCountryData("usa");
 
 /* 
-todo 13-6 Как работает promise по цепочке
-Нам нужно вывести соседей на страницу
-Как избежать адской пирамиды вызовов с помощью fetch
-Во втором then лежат данные, которые мы получили от сервера и там лежат borders, страны соседи. Именно когда мы получили данные, мы можем запустить вторую callback функцию, которая будет генерировать соседа. Только после первой, так как вторая будет брать данные из первой (находить соседей). Поэтому во втором then, где запустили renderCards, запустим переменную const neighbour = data[0].borders[0], который unicode. Здесь же запускаем новый fetch, также как делали с XMLHttpRequest, создавали новый запрос, только здесь ссылку возьмем по unicode
-Но если мы будем дальше создавать fetch внутри then, то чем это будет отличаться от адской пирамиды вызовов? И действительно ничем. Поэтому нам нужно второй then превратить в fetch, то есть сделать return fetch. Тем самым у нас будет получен новый промис, который будет заполнен инфой с ссылки про соседа. А дальше также использовать .then(function(response){return response.json()}).then(function(data){console.log(data)}). Опять используем renderCards(data, "neighbor") // Но тут ошибка, формат SVG, вероятно из-за того, что мы не переводили/деструктуризировали в объект, так что перед renderCards сделаем доп переменную const [res] = data;
+todo 13-7 Обработка ошибок в promise
+То есть рассмотрим второй сценарий промисов
+Первый - когда у нас приходит что-то положительное от сервера и мы получаем данные. Но бывает так, что мы данные не получаем по каким-то проблемам. Вот их и научимся решать и изучим еще пару полезных методов
 
-Так избежали адской пирамиды вызовов, сделав цепь вызовов (then.then.renderCards-return fetch.then.then.renderCards)
-Перепишем код в стрелочный
+Для начала раскомментируем btn в html. Повесим на нее обработчик события и при нажатии на нее будет срабатывать функция getCountryData
+Допустим, что после нажатия на кнопку, когда данные отобразятся на странице, у пользователя отвалится интернет (Network -- offline)
+Нажмем на кнопку еще раз и сразу получим ошибку - Uncaught (in promise) TypeError: Failed to fetch
+Ошибка произошла на строке - const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
+Нужно отловить эту ошибку, что позволяет делать promise
+Есть несколько способов отловить ошибку и рассказать о ней пользователю.
+ПРОМИСЫ В МЕТОДЕ THEN позволяют использовать 2 параметра: 1) callback, который отвечает за положительный результат,
+а вот 2) - callback за отрицательный результат, которая будет обрабатывать ошибки.
+Так что дополним первый then вторым callback(err) и посмотрим результат в консоли
+Для начала вернем интернет, нажмем кнопку и снова отключим 
+Вот что будет в консоли
+1) Это console.log(err):
+TypeError: Failed to fetch
+    at getCountryData (main.js:183:19)
+    at HTMLButtonElement.<anonymous> (main.js:225:3)
+2) а это дальнейшая ошибка
+Uncaught (in promise) TypeError: Cannot read properties of undefined (reading '0')
+    at main.js:189:23
+
+Ошибка 2 от второго промиса (страна сосед), куда нужно будет скопировать такой же callback
+Но это усложняет код, делает лишние повторения.
+Было бы хорошо, если бы существовал способ отловить ваще любую ошибку. И этот способ есть.
+Уберем все (err) => console.log(err)
+Поэтому для fetch (т.е. первого, после последнего then у второго соседа) в конце поставим метод CATCH, а в него уже положим (err) => console.log(err)
+Возвращаем интернет, проверяем
+Вуаля, все ошибки отловлены
+TypeError: Failed to fetch
+    at getCountryData (main.js:183:19)
+    at HTMLButtonElement.<anonymous> (main.js:239:3)
+
+Для пользователя недостаточно, что ошибку выводим в консоли. Поэтому выведем для пользователя какая ошибка произошла и что делать
+Перед function getCountry создадим еще одну функцию для обработки ошибок renderError. А запустим ее в методе catch 
+Можно стилизовать ошибки каким-угодно образом
+
+
+Помимо then и catch у promise есть метод FINALLY
+такая же колбек функция, которая выполнится в любом случае, вне зависимости, выполнится ли then или catch
+так как мы каждый раз делаем containerCounrty opacity = 1, туда и положим это действие
 */
+
+btn.addEventListener("click", function () {
+  getCountryData("usa");
+});
