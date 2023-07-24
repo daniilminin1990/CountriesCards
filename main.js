@@ -316,21 +316,7 @@ getCountry("usa")
   }
 })();
 
-/* 
-todo 13-16 Параллельное выполнение promises
-МЕТОД для Promise.ALL
-Позволяет загрузить асинхронные данные синхронно
-Для ситуаций, когда запустили несколько promise, но они должны выполняться в одно и то же время, т.е. работать параллельно
-! Когда используешь async/await обязательно используй try catch
-
-Получили 3 массива с названиями столиц
-В консоли видно, что данные запрашиваются по очереди и на трафик тратится порядка 300-500 мс, почти полсекунды на каждый запрос.
-Но нам не нужно, чтобы они выполнялись по очереди, это долго
-А как сделать их одновременно?!
-Используем метод Promise.All
-Метод All в массив принимает запросы, которые будут выполняться одновременно. Создадим эти запросы
-Теперь все загрузилось в одно и то же время
-*/
+// Promise.all()
 async function get3Capital(c1, c2, c3) {
   try {
     // const response1 = await fetch(`https://restcountries.com/v3.1/name/${c1}`);
@@ -362,3 +348,80 @@ async function get3Capital(c1, c2, c3) {
   }
 }
 get3Capital("belarus", "russia", "turkey");
+
+/* 
+todo 13-17 Доп методы параллельного кода
+метод Promise.race() позволяет взять несколько запросов, но вернется самый быстрый из выполненных
+Также как и All принимает в себя массив, потому что мы передаем несколько запросов
+При вызове результата в консоль, res[0] (или res, не важно), выйдет самый быстрый результат
+Чем может быть полезен -
+тогда, когда данные пользователь пытается получить, они идут слишком долго или у него плохое интернет соединение
+И мы как программисты должны решать эту проблему, если загрузка идет слишком долго
+Как это сделать?!
+Нужно создать свой собственный запрос, например запрос на 3 сек. И этот запрос нужно поместить в этот Promise.race. Тем самым  сработает либо функция которая загрузит данные, либо функция, которая сработает после 5 сек и выведет сообщение, что вы ждали слишком долго.
+Создадим функцию timeout(sec)
+Затем создадим еще один Promise.race, скопируем туда первый fetch из const res = await Promise.race()
+Там сравним этот скопированный fetch и timeout. Также применим к этому race.then.catch
+
+
+* Следующий метод Promise.allSettled()
+Оч похоже на Promise.all()
+Но в отличие от него вернет результат промисов, которые были выполнены, вне зависимости от того будет ли какой-либо из промисов отклонен
+! В Promise.all(), если один из промисов будет отклонен, то остальное тоже работать не будет 
+В консоли Promise.allSettled работает и выдает результат массива даже с отрицательным promise
+А в Promise.all не вывел массив, но выдал только ошибку
+
+* Следующий метод Promise.any()
+Возвращает первый выполненный Promise
+Вернул "Выполнен", даже если в списке есть отклоненные
+Но если все promise будут отклонены, то будет ошибка
+*/
+
+// Promise.race()
+(async function () {
+  const res = await Promise.race([
+    fetch(`https://restcountries.com/v3.1/name/usa`).then((res) => res.json()),
+    fetch(`https://restcountries.com/v3.1/name/japan`).then((res) =>
+      res.json()
+    ),
+    fetch(`https://restcountries.com/v3.1/name/canada`).then((res) =>
+      res.json()
+    ),
+  ]);
+  console.log(res); // Первым сработал Japan, во второй раз USA
+})();
+
+function timeout(sec) {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`Ожидание превысило ${sec} секунд`));
+    }, sec * 1000);
+  });
+}
+Promise.race([
+  fetch(`https://restcountries.com/v3.1/name/usa`).then((res) => res.json()),
+  timeout(0.4),
+])
+  .then((res) => console.log(res[0]))
+  .catch((err) => console.log(err)); // Ожидание превысило 0.4 секунд
+
+// Promise.allSettled()
+Promise.allSettled([
+  Promise.resolve("Выполнен"),
+  Promise.reject("Отклонен"),
+  Promise.resolve("Еще один Выполнен"),
+]).then((res) => console.log(res));
+
+// Сравним с Promise.all()
+// Promise.all([
+//   Promise.resolve("Выполнен"),
+//   Promise.reject("Отклонен"),
+//   Promise.resolve("Еще один Выполнен"),
+// ]).then((res) => console.log(res));
+
+// Promise.any()
+Promise.any([
+  Promise.resolve("Выполнен"),
+  Promise.reject("Отклонен"),
+  Promise.resolve("Еще один Выполнен"),
+]).then((res) => console.log(res));
