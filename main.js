@@ -70,54 +70,6 @@ request1.addEventListener("load", function () {
 
 // getCountryData("russia");
 
-/* 
-todo 13-5 fetch и promise
-комментируем код выше и пишем по новой - с fetch
-Для вызова функции fetch, пропишем ее внутри getCountry, и присвоим переменной request
-fetch имеет параметры: 1) ссылка на APi, 2)  
-fetch("")
-Т.е. не используем GET или POST, т.к. он подставляется автоматически
-В консоли request получаем Promise
-Про промисы написано тут https://learn.javascript.ru/promise-basics
-fetch это контейнер для будущего кода, который хочет использовать данные, которые мы получим с какого-то удаленного сервера. И мы будущему коду говорим что как только мы получим данные (они загрузятся и будут готовы к использованию), этот использующий код эти данные получит (request). Ну а если у нас будет какая-то ошибка, например сервер будет недоступен, и у пользователя нет интернета, то мы сможем сообщить использующему коду об этой ошибке. Например вывести информацию на странице, что что-то пошло не так
-
-Promise - это контейнер и в случае успеха в него складываются данные с сервера. В случае негативного ответа
-К переменной request, т.е. к промису, т.е. к fetch применим метод 
-.then(function(response){
-  console.log(response)
-})
-выйдет какая-то структура данных
-Есть статус выполнения запроса, 
-Т.е. какое-то хранилище статусов
-То же самое мы получали, когда использовали XMLHttpRequest
-const request = new XMLHttpRequest();
-  request.open("GET", `https://restcountries.com/v3.1/name/russia`);
-  request.send();
-  console.log(request);
-  Здесь в консоли увидим структуру XMLHttpRequest, там есть свойство readyState = 4. Это состояние готовности, каждая цифра что-то значит. Об этом написано тут: https://developer.mozilla.org/ru/docs/Web/API/XMLHttpRequest/readyState
-То есть получаем то же самое, что и в промисе
-И вместо того, чтобы дальше создавать обработчик события, мы можем использовать этот then
-
-Но где наши данные???
-Чтобы получить наши данные, нужно воспользоваться методом JSON, но не тем, который использовали ранее, а вот таким:
-response.json(). Если вывести его в консоль, то это тот же промис, но у него есть 
-PromiseResult Array с нашими данными
-Чтобы нам их получить, нужно завершить CallBack функцию для then словом return
-return response.json()
-Тем самым функция fetch станет результатом, который вернется с помощью метода json
-и т.к. результат все-таки промис, то нужно опять использовать метод then(function(data){}). Т.е. в параметре указать data, наши данные, то же что и получали в предыдущем коде
-
-
-Итого
-then используется только для промисов
-1) создаем запрос fetch().+2 метода: 1)then(какой-то ответ, например response){return response.json()}.2) then(function (data){console.log(data)})
-
-Теперь опять вернем код renderCards и применим его во вновь написанном, во втором then
-renderCards(data[0])
-
-Перепишем код со стрелочными функциями
-*/
-
 function renderCards(data, className = "") {
   const html = `<article class="country ${className}">
       <img class="country__img" src="${data.flags.svg}" />
@@ -181,80 +133,127 @@ function renderError(message) {
   countriesContainer.insertAdjacentText("beforeend", message);
 }
 
+/// Обработка ошибок
+
+//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
+//   console.log(request);
+//   request
+//     .then((response) => {
+//       console.log(request);
+//       console.log(response);
+
+//       if (!response.ok) {
+//         throw new Error(`Страна не найдена ${response.status}`);
+//       }
+//       return response.json();
+//     })
+//     .then((data) => {
+//       renderCards(data[0]);
+//       // const neighbor = data[0].borders[0];
+//       const neighbor = "asdaqs";
+
+//       // Страна сосед
+//       return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
+//         .then((response) => {
+//           if (!response.ok) {
+//             throw new Error(`Страна не найдена ${response.status}`);
+//           }
+//           return response.json();
+//         })
+//         .then((data) => {
+//           const [res] = data;
+//           renderCards(res, "neighbour");
+//         });
+//     })
+//     .catch((err) =>
+//       renderError(
+//         `Что-то пошло не так из-за ошибки: ${err}. Попробуйте перезагрузить страницу или зайдите позже`
+//       )
+//     )
+//     .finally(() => (countriesContainer.style.opacity = 1));
+// }
+
+// btn.addEventListener("click", function () {
+//   getCountryData("usa");
+// });
+
+// Обработка ошибок через внешнюю функцию
+
 function getCountryData(country) {
   // Страна1
-  const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
-    .then((response) => response.json())
+
+  function getJSON(url, errorMsg = "Что-то пошло не так.") {
+    return fetch(url).then(function (response) {
+      if (!response.ok) {
+        throw new Error(`${errorMsg}(${response.status})`);
+      }
+      return response.json();
+    });
+  }
+
+  const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
+
+  getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
     .then((data) => {
       renderCards(data[0]);
-      const neighbor = data[0].borders[0];
-      console.log(neighbor);
-
+      const neighbor = data[0].borders;
+      // const neighbor = "dfsfssgdsd";
+      if (!neighbor) {
+        throw new Error("Не найдено соседей");
+      }
       // Страна сосед
-      return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
-        .then((response) => response.json())
-        .then((data) => {
-          const [res] = data;
-          console.log(data); // получили страну соседа в формате массива
-          console.log(res); // получили страну соседа в формате объекта
-          renderCards(res, "neighbour");
-        });
+      return getJSON(
+        `https://restcountries.com/v3.1/alpha/${neighbor}`,
+        "Страна не найдена"
+      ).then((data) => {
+        const [res] = data;
+        renderCards(res, "neighbour");
+      });
     })
-    .catch((err) =>
-      renderError(
-        `Что-то пошло не так из-за ошибки: ${err}. Попробуйте перезагрузить страницу или зайдите позже`
-      )
-    )
+    .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
     .finally(() => (countriesContainer.style.opacity = 1));
-  console.log(request);
 }
-// getCountryData("usa");
-
-/* 
-todo 13-7 Обработка ошибок в promise
-То есть рассмотрим второй сценарий промисов
-Первый - когда у нас приходит что-то положительное от сервера и мы получаем данные. Но бывает так, что мы данные не получаем по каким-то проблемам. Вот их и научимся решать и изучим еще пару полезных методов
-
-Для начала раскомментируем btn в html. Повесим на нее обработчик события и при нажатии на нее будет срабатывать функция getCountryData
-Допустим, что после нажатия на кнопку, когда данные отобразятся на странице, у пользователя отвалится интернет (Network -- offline)
-Нажмем на кнопку еще раз и сразу получим ошибку - Uncaught (in promise) TypeError: Failed to fetch
-Ошибка произошла на строке - const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
-Нужно отловить эту ошибку, что позволяет делать promise
-Есть несколько способов отловить ошибку и рассказать о ней пользователю.
-ПРОМИСЫ В МЕТОДЕ THEN позволяют использовать 2 параметра: 1) callback, который отвечает за положительный результат,
-а вот 2) - callback за отрицательный результат, которая будет обрабатывать ошибки.
-Так что дополним первый then вторым callback(err) и посмотрим результат в консоли
-Для начала вернем интернет, нажмем кнопку и снова отключим 
-Вот что будет в консоли
-1) Это console.log(err):
-TypeError: Failed to fetch
-    at getCountryData (main.js:183:19)
-    at HTMLButtonElement.<anonymous> (main.js:225:3)
-2) а это дальнейшая ошибка
-Uncaught (in promise) TypeError: Cannot read properties of undefined (reading '0')
-    at main.js:189:23
-
-Ошибка 2 от второго промиса (страна сосед), куда нужно будет скопировать такой же callback
-Но это усложняет код, делает лишние повторения.
-Было бы хорошо, если бы существовал способ отловить ваще любую ошибку. И этот способ есть.
-Уберем все (err) => console.log(err)
-Поэтому для fetch (т.е. первого, после последнего then у второго соседа) в конце поставим метод CATCH, а в него уже положим (err) => console.log(err)
-Возвращаем интернет, проверяем
-Вуаля, все ошибки отловлены
-TypeError: Failed to fetch
-    at getCountryData (main.js:183:19)
-    at HTMLButtonElement.<anonymous> (main.js:239:3)
-
-Для пользователя недостаточно, что ошибку выводим в консоли. Поэтому выведем для пользователя какая ошибка произошла и что делать
-Перед function getCountry создадим еще одну функцию для обработки ошибок renderError. А запустим ее в методе catch 
-Можно стилизовать ошибки каким-угодно образом
-
-
-Помимо then и catch у promise есть метод FINALLY
-такая же колбек функция, которая выполнится в любом случае, вне зависимости, выполнится ли then или catch
-так как мы каждый раз делаем containerCounrty opacity = 1, туда и положим это действие
-*/
 
 btn.addEventListener("click", function () {
-  getCountryData("usa");
+  getCountryData("australia");
 });
+
+/* 
+todo 13-8 Обработка ошибок сервера
+Посмотрим на типы ошибок от сервера и как мы можем их отлавливать и сообщать пользователю что что-то пошло не так
+Посмотрим что содержит в себе переменная request
+Получаем promise, который записывается в переменную. Некий отложенный контейнер, который будет ждать определенных действий от создающего кода, т.е. от нашего сервера ( в данный момент находится в состоянии pending == ожидание). Т.к. нет данных, мы не можем передать в другой код, для его использования. Мы просто создали обещание того, что тогда, когда данные прогрузятся, в эту коробочку у нас они поместятся. Далее делаем метод then, который сработает тогда, когда сервер отдаст все наши данные и переместит их в промис. Там request уже содержит Promise {<fulfilled>: Response}, т.е. получили какие-то данные
+
+Если отключить интернет, то request будет pending, но PromiseState внутри == rejected
+
+После вызова request в консоль в первом then, выведем еще response. В request есть свойство body: ReadableStream. Такое же свойство есть у response в консоли. Это свойство содержит данные, которые получили от request. В первом then мы конвертировали данные из JSON в вид объекта. Во втором then мы продолжаем использовать эти данные
+
+Существует и другой вариант возникновения ошибки, не как в 13.7
+Допустим укажем несуществующую страну в getCountryData
+Получим ошибку 404 not found
+Когда смотрим в консоли на первый request в PromiseResult видим свойство ok: false, а status: 404
+GET https://restcountries.com/v3.1/name/usaasda 404 (Not Found)
+Вот справка по кодам ответа от сервера: https://developer.mozilla.org/ru/docs/Web/HTTP/Status
+Какие бывают кода и что они представляют.
+Так как ошибку мы обнаруживаем уже сразу в первом промисе, сделаем там магию, условие
+if (!response.ok) {
+  throw new Error(`Страна не найдена ${response.status}`);
+}
+Что мы тут написали?
+Если свойство response.ok == false, то нужно остановить выполнение кода и за это отвечает инструкция THROW(пробрось) (работает также как return - прекращает выполнение дальнейшего кода) и создает новый объект Error с помощью конструктора и эта ошибка будет с содержанием, написанным внутри (). И так как при ошибке мы получаем результат rejected, то у нас выполняется дальнейший метод catch, который выводит сообщение error, в которую и передается текст из if
+
+Теперь про соседа. Там же тоже может быть ошибка. Например также, страна не существует
+Вернем нормальное название страны в getCountryData, а в neighbor положим несуществующую страну
+Скопируем код if, вставим в первый then для второй страны
+Обратите внимание, код 400, а не 404, как было с первой страной
+
+Но если так оставить код, то видно, что у нас куски кода оч похожи друг на друга (первый then для каждой страны)
+Если карточек будет много, то код будет повторяться и раздражать
+
+Создадим функцию-помощник в getCountryData, назовем getJSON (url, "Страна не найдена")
+Подставим функцию в prmoise, вместо первого then для обеих стран
+
+Последнее о еще одной предполагаемой ошибке - существуют страны, у которых нет соседей. Например Австралия
+Сделаем то же самое, пропишем еще один if (!neighbor) {throw new Error("Не найдено соседей");}
+
+*/
