@@ -180,98 +180,192 @@ function renderError(message) {
 //
 // Обработка ошибок через внешнюю функцию
 
-// function getCountryData(country) {
-//   // Страна1
+function getCountryData(country) {
+  // Страна1
 
-//   function getJSON(url, errorMsg = "Что-то пошло не так.") {
-//     return fetch(url).then(function (response) {
-//       if (!response.ok) {
-//         throw new Error(`${errorMsg}(${response.status})`);
-//       }
-//       return response.json();
-//     });
-//   }
+  function getJSON(url, errorMsg = "Что-то пошло не так.") {
+    return fetch(url).then(function (response) {
+      if (!response.ok) {
+        throw new Error(`${errorMsg}(${response.status})`);
+      }
+      return response.json();
+    });
+  }
 
-//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
+  const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
 
-//   getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
-//     .then((data) => {
-//       renderCards(data[0]);
-//       const neighbor = data[0].borders;
-//       // const neighbor = "dfsfssgdsd";
-//       if (!neighbor) {
-//         throw new Error("Не найдено соседей");
-//       }
-//       // Страна сосед
-//       return getJSON(
-//         `https://restcountries.com/v3.1/alpha/${neighbor}`,
-//         "Страна не найдена"
-//       ).then((data) => {
-//         const [res] = data;
-//         renderCards(res, "neighbour");
-//       });
-//     })
-//     .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
-//     .finally(() => (countriesContainer.style.opacity = 1));
-// }
+  getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
+    .then((data) => {
+      renderCards(data[0]);
+      const neighbor = data[0].borders;
+      // const neighbor = "dfsfssgdsd";
+      if (!neighbor) {
+        throw new Error("Не найдено соседей");
+      }
+      // Страна сосед
+      return getJSON(
+        `https://restcountries.com/v3.1/alpha/${neighbor}`,
+        "Страна не найдена"
+      ).then((data) => {
+        const [res] = data;
+        renderCards(res, "neighbour");
+      });
+    })
+    .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
+    .finally(() => (countriesContainer.style.opacity = 1));
+}
 
-// btn.addEventListener("click", function () {
-//   getCountryData("australia");
-// });
+btn.addEventListener("click", function () {
+  getCountryData("australia");
+});
 
 /* 
-todo 13-9 Практика, появление карточки исходя из местоположения
-С помощью стороннего API получали координаты страны и использовали в API, который рендерит карточку
-Это эмуляция той задачи, которую дадут на работе
-Подсказки:
-1) Использовать API, встроенный в браузер, окошко, которое дает разрешение на определение моей геолокации. Скопировать координаты, вставить в другой API, который определит страну, а это значение вставить в наш выше написанный код
-Допустим координаты я получу, но вот как определить страну по координатам?! Ответа нет, идем в гугл
-https://geocode.xyz/api
-Там есть строка Reverse Geocoding
-curl 'https://geocode.xyz/51.50354,-0.12768?geoit=xml&auth=your_api_key'
-Нам понадобится только https, причем нужен правильный формат. Здесь написано, что формат XML. Поменяем на JSON.
-Но что после xml - запрос и какой-то api_key
-api_key это ключ, который можно получить после регистрации (и оплаты сервиса), который как раз вставляется после auth=. В бесплатной версии срабатывает запрос 1 раз в сек. В зарегистрированных - 10 раз в сек. Если оплатить - больше. 1 клик сколько-то стоит
-'https://geocode.xyz/51.50354,-0.12768?geoit=json&auth=421447806752157919442x96444'
+todo 13-10 Что такое промисификация
+создадим отдельно свой промис
+Работает синхронно.
+Чтобы симулировать асинхронность, сделаем задержку
+В таком случае в Promise будет <pending>, а результата не будет. Если раскроем его, то он будет с этим результатом постоянно. Но если нажмем на него через 2 секунды, то резульат изменится 
+Т.е. в начале, пока не получили результата, промис находится в состоянии undefined, он дожидается результата
+Именно поэтому мы используем метод then для нашего промиса. И LotteryTicket сработает только тогда, когда будет результат resolve или reject
+Дополним код 
+lotteryTicket.then(function (res) {
+  console.log(res);
+});
+При положительном результате в консоли через 2 сек появится win, и PromiseState = fulfilled
+А если негативный, то будет ошибка, lose не появится, а в PromiseState = rejected.
+
+Для этого и нужен catch - вылавливать ошибки
+После catch появляется результат в консоли, даже если отрицательный результат
+
+Промисы позволяют работать с отложенным кодом, не заставляя останавливаться другой код
+У промисов есть колбэк функция с 2 параметрами(2 состояния по итогу):
+1) положительный ответ от сервера
+2) негативный
+В случае с сервером первый then - чтобы получить данные в нужном нам формате, вернуть их как новый промис
+С помощью последнего then - получали результат этих преобразованных данных
+Catch - отлавливаем эту ошибку
+
+* Промисификация - превращение кода, который основан на колбэках, в более удобную структуру 
+
+Например создадим callBack HELL, чтобы посмотреть
+Например setTimeout на 6 сек
+
+setTimeout(function () {
+  console.log("Прошла 1 сек");
+  setTimeout(() => {
+    console.log("Прошло 2 сек");
+    setTimeout(() => {
+      console.log("Прошло 3 сек");
+      setTimeout(() => {
+        console.log("Прошло 4 сек");
+        setTimeout(() => {
+          console.log("Прошло 5 сек");
+          setTimeout(() => {
+            console.log("Прошло 6 сек");
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    }, 1000);
+  }, 1000);
+}, 1000);
+
+Для упрощения, т.е. для промисификации, создадим функцию function wait(seconds){}
+
+function wait(seconds) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(resolve, seconds * 1000);
+  });
+}
+
+wait(2)
+  .then(function () {
+    console.log("Вы ждали 2 сек");
+    return wait(1);
+  })
+  .then(function () {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+
+Тем самым мы получаем ровную простыню
 */
 
-// Определяем координаты. Считай по-новой все написали, только без кнопки
-if (navigator.geolocation) {
-  navigator.geolocation.getCurrentPosition(
-    function (position) {
-      console.log(position);
-      const { latitude } = position.coords;
-      const { longitude } = position.coords;
-      console.log(latitude, longitude); // 51.0966193 71.4245694
-      console.log(`https://www.google.com/maps/@${latitude},${longitude}`); // https://www.google.com/maps/@51.0966193,71.4245694
-
-      // Используем API для обратной геолокации
-      fetch(
-        `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=421447806752157919442x96444`
-      )
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error(`Что-то пошло не так. (${response.status})`);
-          }
-          return response.json();
-        })
-        .then((result) => {
-          const country = result.country;
-          // Чтобы вставить в API для определения страны, сделаем вернем новый fetch запрос о стране
-          return fetch(`https://restcountries.com/v3.1/name/${country}`);
-        }) // здесь продолжим этот fetch через then
-        .then((response) => response.json())
-        .then((data) => {
-          console.log(data);
-          renderCards(data[0]);
-        })
-        .catch((err) =>
-          renderError(`Что-то пошло не так из-за ошибки: ${err}.`)
-        )
-        .finally(() => (countriesContainer.style.opacity = 1));
-    },
-    function () {
-      alert("Вы не предоставили доступ к своей локации");
+const lotteryTicket = new Promise(function (resolve, reject) {
+  setTimeout(() => {
+    if (Math.random() >= 0.5) {
+      resolve("win");
+    } else {
+      reject("lose");
     }
-  );
+  }, 2000);
+});
+
+lotteryTicket
+  .then(function (res) {
+    console.log(lotteryTicket);
+    console.log(res);
+  })
+  .catch(function (err) {
+    console.error(err);
+  });
+
+console.log(lotteryTicket); // Promise {<rejected>: 'lose'} \n Uncaught (in promise) lose
+
+setTimeout(function () {
+  console.log("Прошла 1 сек");
+  setTimeout(() => {
+    console.log("Прошло 2 сек");
+    setTimeout(() => {
+      console.log("Прошло 3 сек");
+      setTimeout(() => {
+        console.log("Прошло 4 сек");
+        setTimeout(() => {
+          console.log("Прошло 5 сек");
+          setTimeout(() => {
+            console.log("Прошло 6 сек");
+          }, 1000);
+        }, 1000);
+      }, 1000);
+    }, 1000);
+  }, 1000);
+}, 1000);
+
+function wait(seconds) {
+  return new Promise(function (resolve, reject) {
+    setTimeout(resolve, seconds * 1000);
+  });
 }
+
+wait(2)
+  .then(function () {
+    console.log("Вы ждали 2 сек");
+    return wait(1);
+  })
+  .then(function () {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  })
+  .then(() => {
+    console.log("Вы ждали еще 1 сек");
+    return wait(1);
+  });
