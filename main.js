@@ -77,12 +77,10 @@ function renderCards(data, className = "") {
         <h3 class="country__name">${data.name.common}</h3>
         <h4 class="country__region">${data.region}</h4>
         <p class="country__row"><span>👫</span>${data.population}</p>
-        <p class="country__row"><span>🗣️</span>${
-          Object.entries(data.languages)[0][1]
-        }</p>
-        <p class="country__row"><span>💰</span>${
-          Object.entries(Object.entries(data.currencies)[0][1])[0][1]
-        }</p>
+        <p class="country__row"><span>🗣️</span>${Object.entries(data.languages)[0][1]
+    }</p>
+        <p class="country__row"><span>💰</span>${Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+    }</p>
       </div>
     </article>`;
 
@@ -229,7 +227,8 @@ todo 13-12 Промисификация часть 2
 //     const { longitude } = position.coords;
 //     // Используем API для обратной геолокации
 //     fetch(
-//       `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=421447806752157919442x96444`
+//       `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=
+// ! ЗДЕСЬ ВСТАВЬТЕ СВОЙС API key`
 //     )
 //       .then(function (response) {
 //         if (!response.ok) {
