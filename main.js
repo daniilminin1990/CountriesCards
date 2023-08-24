@@ -7,8 +7,6 @@ const inputEl = document.querySelector('.autocomplete-input');
 const ulForAutocomplete = document.querySelector('.autocomplete-wrapper');
 const dropdown = document.querySelector('.dropdown');
 
-// ! ВНИМАНИЕ . УДАЛИ API ключ после auth= при релизе
-
 // Получение массива названий стран на английском и русском Fetch
 // const countryNames = [];
 // function getAllCountries() {
