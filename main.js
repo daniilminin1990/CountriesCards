@@ -95,7 +95,7 @@ function onCountryButtonClick(e) {
   e.preventDefault();
   const buttonEl = e.target;
 
-  // inputEl.value = buttonEl.innerHTML;
+  inputEl.value = buttonEl.innerHTML;
 
   function getEnglishName() {
     const language = /[А-Яа-яЁё]/i.test(inputEl.value) ? 1 : 0;
