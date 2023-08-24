@@ -1,426 +1,544 @@
-"use strict";
+'use strict';
 
-const btn = document.querySelector(".btn-country");
-const countriesContainer = document.querySelector(".countries");
+const countriesContainer = document.querySelector('.countries');
+const btn = document.querySelector('.btn-country');
+const reverseGeoApiKey = '2782861fb2944909b32da2a65d8946dc';
+const inputEl = document.querySelector('.autocomplete-input');
+const ulForAutocomplete = document.querySelector('.autocomplete-wrapper');
+const dropdown = document.querySelector('.dropdown');
 
-///////////////////////////////////////
+// ! ВНИМАНИЕ . УДАЛИ API ключ после auth= при релизе
 
-// const request1 = new XMLHttpRequest();
-// request1.open("GET", "https://meowfacts.herokuapp.com/?count=3");
-// request1.send();
+// Fetch all countries
+// const arrOfAllCountriesName = [];
+// function getAllCountries() {
+//   fetch(`https://restcountries.com/v3.1/all`)
+//     .then((response) => {
+//       return response.json();
+//     })
+//     .then((data) => {
+//       data;
+//       console.log(data);
+//       for (const country of data) {
+//         arrOfAllCountries.push([
+//           country.name.common,
+//           country.translations.rus.common,
+//         ]);
+//       }
+//     });
+// }
+// getAllCountriesName();
+// console.log(arrOfAllCountries);
 
-// request1.addEventListener("load", function () {
-//   const data = JSON.parse(request1.responseText);
-//   console.log(data);
-//   const [text1, text2, text3] = data.data;
-//   console.log(text1);
-//   console.log(text2);
-//   console.log(text3);
+// Async await all countries
+
+let countryNames = [];
+async function getAllCountriesName() {
+  const response = await fetch(`https://restcountries.com/v3.1/all`);
+  const data = await response.json();
+
+  countryNames = data.map((country) => {
+    return country.name.common;
+  });
+
+  // country.translations.rus.common,
+}
+getAllCountriesName();
+
+// Слушатель событий при вводе в input
+inputEl.addEventListener('input', onInputChange);
+
+// Функция отвечает за изменения в поле input, создает свой array, заполненный странами, которые совпадают по вводимым буквам
+function onInputChange() {
+  removeAutocompleteDropdown();
+  const value = inputEl.value.toLowerCase();
+
+  if (value.length === 0) return;
+
+  const filteredNames = [];
+  for (let countryName of countryNames) {
+    if (countryName.substring(0, value.length).toLowerCase() === value) {
+      filteredNames.push(countryName);
+    }
+  }
+  console.log(filteredNames);
+  createAutocompleteDropdown(filteredNames);
+}
+// Рендеринг выпадающего списка HTML элементов с классами и id
+function createAutocompleteDropdown(list) {
+  const listEl = document.createElement('ul');
+  listEl.className = 'autocomplete-list';
+  // Для удаления повторяюшегося выпадающего списка
+  listEl.id = 'autocomplete-list';
+
+  list.forEach((country) => {
+    const listItem = document.createElement('li');
+    const countryButton = document.createElement('button');
+    countryButton.innerHTML = country;
+    // Вызов onCountryButtonClick при нажатии
+    countryButton.addEventListener('click', onCountryButtonClick);
+    listItem.appendChild(countryButton);
+    listEl.appendChild(listItem);
+  });
+
+  ulForAutocomplete.appendChild(listEl);
+}
+
+// Функция для удаления предыдущих элементов выпадающего списка
+function removeAutocompleteDropdown() {
+  const listEl = document.querySelector('#autocomplete-list');
+  if (listEl) listEl.remove();
+}
+
+// Функция для выбора страны из списка + запуск getCountryData
+function onCountryButtonClick(e) {
+  e.preventDefault();
+  const buttonEl = e.target;
+  inputEl.value = buttonEl.innerHTML;
+
+  getCountryData(inputEl.value);
+
+  removeAutocompleteDropdown();
+}
+
+// inputEl.addEventListener('keyup', (e) => {
+//   if (e.code === 'Enter') {
+//     console.log(buttonEl.innerHTML);
+//     // if(buttonEl.innerHTML === )
+//     console.log('enter was pressed');
+//   }
 // });
 
-// Функция запроса данных стран создает карточки + рендер карточки на странице
+// // Функция использует данные с сервера для использования в HTML и рендерит карточку
+// function renderCards(data, className = '') {
+//   const html = `<article class="country ${className}">
+//         <img class="country__img" src="${data.flags.svg}" />
+//         <div class="country__data">
+//           <h3 class="country__name">${data.name.common}</h3>
+//           <h4 class="country__region">${data.region}</h4>
+//           <p class="country__row"><span>👫</span>${data.population}</p>
+//           <p class="country__row"><span>🗣️</span>${
+//             Object.entries(data.languages)[0][1]
+//           }</p>
+//           <p class="country__row"><span>💰</span>${
+//             Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+//           }</p>
+//         </div>
+//       </article>`;
+//   // Выводим на страницу карточку и убираем прозрачность
+//   countriesContainer.insertAdjacentHTML('beforeend', html);
+//   countriesContainer.style.opacity = '1';
+// }
+// // Функция запрашивает данные для страны и создает карточку
 // function getCountryData(country) {
 //   const request = new XMLHttpRequest();
-//   request.open("GET", `https://restcountries.com/v3.1/name/${country}`);
+//   request.open('GET', `https://restcountries.com/v3.1/name/${country}`);
 //   request.send();
 
-//   // Функция использует данные с сервера для использования в HTML коде
-//   function renderCards(data, className = "") {
-//     const html = `<article class="country ${className}">
-//       <img class="country__img" src="${data.flags.svg}" />
-//       <div class="country__data">
-//         <h3 class="country__name">${data.name.common}</h3>
-//         <h4 class="country__region">${data.region}</h4>
-//         <p class="country__row"><span>👫</span>${data.population}</p>
-//         <p class="country__row"><span>🗣️</span>${
-//           Object.entries(data.languages)[0][1]
-//         }</p>
-//         <p class="country__row"><span>💰</span>${
-//           Object.entries(Object.entries(data.currencies)[0][1])[0][1]
-//         }</p>
-//       </div>
-//     </article>`;
-
-//     // Выводим на страницу карточку и убираем нулевую прозрачность
-//     countriesContainer.insertAdjacentHTML("beforeend", html);
-//     countriesContainer.style.opacity = 1;
-//   }
-
 //   // Выполняем действия с данными после их загрузки
-//   request.addEventListener("load", function () {
+//   request.addEventListener('load', function () {
 //     const [data] = JSON.parse(this.responseText);
-
-//     // Выводим на страницу карточку с первой страной
+//     const neighbour = data.borders[0];
+//     // Вывод карточки с первой страной
 //     renderCards(data);
-//     const neighbor = data.borders[0];
-//     console.log(neighbor);
 
-//     // Создаем запрос к серверу внутри первой call-back функции
+//     // Запрос нк сервеу внутри первой call-back функции
 //     const request2 = new XMLHttpRequest();
-//     request2.open("GET", `https://restcountries.com/v3.1/alpha/${neighbor}`);
+//     request2.open('GET', `https://restcountries.com/v3.1/alpha/${neighbour}`);
 //     request2.send();
-//     request2.addEventListener("load", function () {
+//     // // Выполнение доействий с данными после их щагрузки
+//     request2.addEventListener('load', function () {
 //       const [data2] = JSON.parse(this.responseText);
-
-//       // Выводим на страницу карточку страны соседа
-//       renderCards(data2, "neighbour");
+//       // Выврл на страницу карточки соседней страны
+//       renderCards(data2, 'neighbour');
 //     });
 //   });
 // }
+// btn.addEventListener('click', () => {
+//   getCountryData('usa');
+// });
 
-// getCountryData("russia");
-
-function renderCards(data, className = "") {
-  const html = `<article class="country ${className}">
-      <img class="country__img" src="${data.flags.svg}" />
-      <div class="country__data">
-        <h3 class="country__name">${data.name.common}</h3>
-        <h4 class="country__region">${data.region}</h4>
-        <p class="country__row"><span>👫</span>${data.population}</p>
-        <p class="country__row"><span>🗣️</span>${Object.entries(data.languages)[0][1]
-    }</p>
-        <p class="country__row"><span>💰</span>${Object.entries(Object.entries(data.currencies)[0][1])[0][1]
-    }</p>
-      </div>
-    </article>`;
-
-  // Выводим на страницу карточку и убираем нулевую прозрачность
-  countriesContainer.insertAdjacentHTML("beforeend", html);
+// * Fetch - делаем то же самое, что сверху, но с Fetch
+/*
+function getCountryData (country) {
+  const request = fetch('https://restcountries.com/v3.1/name/${country}')
+  console.log(request); // Promise {<pending>}
 }
+getCountryData('russia')
+  В fetch() параметр передаем URL откуда получаем данные. В отличие от XMLHttpRequest не пишем open (соответственно и GET), send, Это подставляется автоматически
+  Выводя результат fetch в консоль, мы видим результат - Promise
+  Promise - некий контейнер, в который получаю данные от fetch, либо в случае негативного ответа сделать действие
+  Т.е. сейчас функция fetch стала Promise, к которой мы можем применить метод THEN - метод создания хранилища статусов. Оно используется для трансформации Promise
+  Это хранилище статусов очень похоже на некоторые свойства XMLHttpRequest.
+  Можно сказать, что THEN для FETCH, это аналогия SEND для XMLHTTPREQUEST
+  Fetch('URL').THEN(function(response){})...
+
+  const request = fetch('https://restcountries.com/v3.1/name/${country}').THEN(function(response){console.log(response)}) ;  // Response - Куча статусов
+
+  НО ГДЕ ДАННЫЕ?!
+  ОНИ В THEN, но в формате JSON. И чтобы перевести из JSON в объект тут используем не стандартный парс, а именно МЕТОД JSON.
+  smth.json().
+  Так мы тоже получим промис
+
+  const request = fetch('https://restcountries.com/v3.1/name/${country}').THEN(function(response){console.log(response.json)}); // очередной Promise, но у которого есть PromiseResult - массив данных
+
+  Так как это опять промис, мы будем опять использовать THEN
+  const request = fetch('https://restcountries.com/v3.1/name/${country}')
+  .THEN(function(response){
+  return response.json
+  }).THEN(function(data){console.log(data)});
+
+  И еще раз. FETCH
+  1) создаем запрос const request = fetch('URL') - получаем промис - хранилище для запросов Fetch
+  2) .then(callback(response){return response.json()] - трансформируем промис в статусы и внутри конвертируем из json в нужный формат, объекта или массва ; Но это опять промис
+  3) .then(callBack(data) {return data} - трансформируем еще один промис, уже получаем нормальные данные
+*/
+
+//asdasdasdasdasdaasdasdsa
+//asdasdasdasdasdaasdasdsa
+//asdasdasdasdasdaasdasdsa
+//asdasdasdasdasdaasdasdsa
+//asdasdasdasdasdaasdasdsa
+
+// Fetch без обработки ошибок
+// function renderCards(data, className = '') {
+//   const html = `<article class="country ${className}">
+//           <img class="country__img" src="${data.flags.svg}" />
+//           <div class="country__data">
+//             <h3 class="country__name">${data.name.common}</h3>
+//             <h4 class="country__region">${data.region}</h4>
+//             <p class="country__row"><span>👫</span>${data.population}</p>
+//             <p class="country__row"><span>🗣️</span>${
+//               Object.entries(data.languages)[0][1]
+//             }</p>
+//             <p class="country__row"><span>💰</span>${
+//               Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+//             }</p>
+//           </div>
+//         </article>`;
+//   countriesContainer.insertAdjacentHTML('beforeend', html);
+//   countriesContainer.style.opacity = 1;
+// }
 
 // function getCountryData(country) {
+//   // Страна
 //   const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
-//     .then(function (response) {
-//       console.log(response);
-//       return response.json();
-//     })
-//     .then(function (data) {
-//       console.log(data);
-//       renderCards(data[0]);
-//     });
-//   console.log(request);
-// }
-// getCountryData("russia");
-
-// function getCountryData(country) {
-//   // Страна1
-//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`)
-//     .then((response) => response.json())
-//     .then((data) => {
-//       renderCards(data[0]);
-//       const neighbor = data[0].borders[0];
-//       console.log(neighbor);
-
-//       // Страна сосед
-//       return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
-//         .then(function (response) {
-//           return response.json();
-//         })
-//         .then(function (data) {
-//           const [res] = data;
-//           console.log(data); // получили страну соседа в формате массива
-//           console.log(res); // получили страну соседа в формате объекта
-//           renderCards(res, "neighbour");
-//         });
-//     });
-//   console.log(request);
-// }
-// getCountryData("usa");
-
-function renderError(message) {
-  countriesContainer.insertAdjacentText("beforeend", message);
-}
-
-/// Обработка ошибок
-
-//   const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
-//   console.log(request);
-//   request
 //     .then((response) => {
-//       console.log(request);
-//       console.log(response);
-
-//       if (!response.ok) {
-//         throw new Error(`Страна не найдена ${response.status}`);
-//       }
 //       return response.json();
 //     })
 //     .then((data) => {
 //       renderCards(data[0]);
-//       // const neighbor = data[0].borders[0];
-//       const neighbor = "asdaqs";
-
+//       const neighbour = data[0].borders[0];
 //       // Страна сосед
-//       return fetch(`https://restcountries.com/v3.1/alpha/${neighbor}`)
+//       // Чтобы не было адской пирамиды вызовов, делаем return
+//       return fetch(`https://restcountries.com/v3.1/alpha/${neighbour}`)
 //         .then((response) => {
-//           if (!response.ok) {
-//             throw new Error(`Страна не найдена ${response.status}`);
-//           }
 //           return response.json();
 //         })
 //         .then((data) => {
+//           // деструктурируем, т.к. data - массив и flags прочесть не получится, будет ругаться
 //           const [res] = data;
-//           renderCards(res, "neighbour");
+//           console.log(res);
+//           renderCards(res, 'neighbour');
 //         });
-//     })
-//     .catch((err) =>
-//       renderError(
-//         `Что-то пошло не так из-за ошибки: ${err}. Попробуйте перезагрузить страницу или зайдите позже`
-//       )
-//     )
-//     .finally(() => (countriesContainer.style.opacity = 1));
+//     });
 // }
-
-// btn.addEventListener("click", function () {
-//   getCountryData("usa");
+// btn.addEventListener('click', () => {
+//   getCountryData('usa');
 // });
 
-//
-// Обработка ошибок через внешнюю функцию
+//! Fetch с обработкой ошибок, например нет соединения или Страна не найдена или соседних стран нет + добавили все соседние страны
+// function getCountryFromInput(){
+function renderCards(data, className = '') {
+  const html = `<article class="country ${className}">
+          <img class="country__img" src="${data.flags.svg}" />
+          <div class="country__data">
+            <h3 class="country__name">${data.name.common}</h3>
+            <h4 class="country__region">${data.region}</h4>
+            <p class="country__row"><span>👫</span>${data.population}</p>
+            <p class="country__row"><span>🗣️</span>${
+              Object.entries(data.languages)[0][1]
+            }</p>
+            <p class="country__row"><span>💰</span>${
+              Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+            }</p>
+          </div>
+        </article>`;
+  countriesContainer.insertAdjacentHTML('beforeend', html);
+}
+
+// Рендер ошибки в HTML
+function renderError(message) {
+  countriesContainer.insertAdjacentHTML('beforeend', message);
+}
+
+// Функция fetch с пробросом ошибки
+function getJSON(url, errorMsg = 'Что-то пошло не так. ') {
+  return fetch(url).then((response) => {
+    if (!response.ok) {
+      throw new Error(`${errorMsg} ${response.status})`);
+    }
+    return response.json();
+  });
+}
 
 function getCountryData(country) {
-  // Страна1
-
-  function getJSON(url, errorMsg = "Что-то пошло не так.") {
-    return fetch(url).then(function (response) {
-      if (!response.ok) {
-        throw new Error(`${errorMsg}(${response.status})`);
-      }
-      return response.json();
-    });
-  }
-
-  const request = fetch(`https://restcountries.com/v3.1/name/${country}`);
-
-  getJSON(`https://restcountries.com/v3.1/name/${country}`, "Страна не найдена")
+  // Страна, и сообщение если страна не найдена
+  getJSON(
+    `https://restcountries.com/v3.1/name/${country}`,
+    'Что-то пошло не так. Вероятно в названии страны допущена ошибка'
+  )
     .then((data) => {
       renderCards(data[0]);
-      const neighbor = data[0].borders;
-      // const neighbor = "dfsfssgdsd";
-      if (!neighbor) {
-        throw new Error("Не найдено соседей");
-      }
-      // Страна сосед
-      return getJSON(
-        `https://restcountries.com/v3.1/alpha/${neighbor}`,
-        "Страна не найдена"
-      ).then((data) => {
-        const [res] = data;
-        renderCards(res, "neighbour");
-      });
-    })
-    .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
-    .finally(() => (countriesContainer.style.opacity = 1));
-}
 
-// btn.addEventListener("click", function () {
-//   getCountryData("australia");
+      // Страны соседи
+      const neighboursData = data[0].borders;
+      console.log(neighboursData);
+      if (!neighboursData) {
+        throw new Error(`соседних стран нет`);
+      }
+      // Сделаем через Promise.all для одновременных запросов по каждому соседу. Массив для PromiseReults каждой соседней страны
+      const neighboursFetches = neighboursData.map((neighbour) =>
+        getJSON(`https://restcountries.com/v3.1/alpha/${neighbour}`)
+      );
+      return Promise.all(neighboursFetches);
+    })
+    .then((neighbours) => {
+      for (const neighbourTitle of neighbours) {
+        const [res] = neighbourTitle;
+        renderCards(res, 'neighbour');
+      }
+    })
+    .catch(function (err) {
+      renderError(`Что-то пошло не так из-за ошибки - ${err.message}.`);
+    })
+    .finally(() => {
+      countriesContainer.style.opacity = 1;
+    });
+}
+// btn.addEventListener('click', () => {
+//   getCountryData('austria');
 // });
 
-/* 
-todo 13-12 Промисификация часть 2
-Избавимся от navigator API в синтаксис промисов и избавимся от callbackов в callbackах
-*/
-// navigator.geolocation.getCurrentPosition(
-//   function (position) {
-//     const { latitude } = position.coords;
-//     const { longitude } = position.coords;
-//     // Используем API для обратной геолокации
-//     fetch(
-//       `https://geocode.xyz/${latitude},${longitude}?geoit=json&auth=
-// ! ЗДЕСЬ ВСТАВЬТЕ СВОЙС API key`
-//     )
-//       .then(function (response) {
-//         if (!response.ok) {
-//           throw new Error(`Что-то пошло не так. (${response.status})`);
-//         }
-//         return response.json();
-//       })
-//       .then((result) => {
-//         const country = result.country;
-//         // Чтобы вставить в API для определения страны, сделаем вернем новый fetch запрос о стране
-//         return fetch(`https://restcountries.com/v3.1/name/${country}`);
-//       })
-//       .then((response) => response.json())
-//       .then((data) => {
-//         console.log(data);
-//         renderCards(data[0]);
-//       })
-//       .catch((err) => renderError(`Что-то пошло не так из-за ошибки: ${err}.`))
-//       .finally(() => (countriesContainer.style.opacity = 1));
-//   },
-//   function () {
-//     alert("Вы не предоставили доступ к своей локации");
-//   }
-// );
+// dsdfsdfsdfsdfsdfsdfsdfsdfsdfsdfsdfsdfds
 
-// Перепишем этот код, используя промисификацию
-new Promise(function (resolve, reject) {
-  // navigator.geolocation.getCurrentPosition(
-  //   function (position) {
-  //     resolve(position);
-  //   },
-  //   function (err) {
-  //     reject(err);
-  //   }
-  // );
-  navigator.geolocation.getCurrentPosition(resolve, reject); // Т.е. говорим промису - запиши в result результат выполнения getCurrentPosition, а в reject при отрицательном
-})
-  // Так создали промис. Теперь обратимся к pos + используем then
-  .then(function (data) {
-    // В data будут лежать данные позитивного ответа
-    console.log(data);
-    // Если нужно вернуть какие-т о данные для другого API, можем дальше return ... ).then и пошла возня
-  });
+//! Reverse geolocation fetch then
+// function renderCards(data, className = '') {
+//   const html = `<article class="country ${className}">
+//           <img class="country__img" src="${data.flags.svg}" />
+//           <div class="country__data">
+//             <h3 class="country__name">${data.name.common}</h3>
+//             <h4 class="country__region">${data.region}</h4>
+//             <p class="country__row"><span>👫</span>${data.population}</p>
+//             <p class="country__row"><span>🗣️</span>${
+//               Object.entries(data.languages)[0][1]
+//             }</p>
+//             <p class="country__row"><span>💰</span>${
+//               Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+//             }</p>
+//           </div>
+//         </article>`;
+//   countriesContainer.insertAdjacentHTML('beforeend', html);
+// }
+// // Рендер ошибки в HTML
+// function renderError(message) {
+//   countriesContainer.insertAdjacentHTML('beforeend', message);
+// }
+// // Функция fetch с пробросом ошибки
+// function getJSON(url, errorMsg = 'Что-то пошло не так. ') {
+//   return fetch(url).then((response) => {
+//     if (!response.ok) {
+//       throw new Error(`${errorMsg} ${response.status})`);
+//     }
+//     return response.json();
+//   });
+// }
+// // Страна по геолокации
+// function getCountryByLocation() {
+//   // Определяем местоположение
+//   navigator.geolocation.getCurrentPosition(
+//     function (pos) {
+//       const { latitude, longitude } = pos.coords;
+//       console.log(latitude);
+//       console.log(longitude);
+//       fetch(
+//         `https://api.geoapify.com/v1/geocode/reverse?lat=${latitude}&lon=${longitude}&format=json&apiKey=${reverseGeoApiKey}`
+//       )
+//         .then((response) => {
+//           //         В случае ошибки
+//           if (!response.ok) {
+//             throw new Error(`Что то пошло не так (${response.status})`);
+//           }
+//           return response.json();
+//         })
+//         // Определяем страну по геолокации
+//         .then((result) => {
+//           console.log(result.results[0].country);
+//           const country = result.results[0].country;
+//           return fetch(`https://restcountries.com/v3.1/name/${country}`);
+//         })
+//         .then((response) => {
+//           return response.json();
+//         })
+//         .then((data) => {
+//           console.log(data[0]);
+//           renderCards(data[0]);
+//           // Страна сосед и обработка если нет соседних стран
+//           const neighbourData = data[0].borders;
+//           if (!neighbourData) {
+//             throw new Error(`соседних стран нет`);
+//           }
+//           const neighbour = data[0].borders[0];
+//           return getJSON(
+//             `https://restcountries.com/v3.1/alpha/${neighbour}`
+//           ).then((data) => {
+//             const [res] = data;
+//             renderCards(res, 'neighbour');
+//           });
+//         })
+//         .catch(function (err) {
+//           renderError(`Что-то пошло не так из-за ошибки ${err.message}.`);
+//           console.log(err);
+//         })
+//         .finally(() => {
+//           countriesContainer.style.opacity = 1;
+//         });
+//     },
+//     function () {
+//       alert('Вы не передали свою гео-локацию');
+//     }
+//   );
+// }
 
-// * Async/Await
-async function getCountry(country) {
+// btn.addEventListener('click', () => {
+//   getCountryByLocation();
+// });
+
+// new Promise(function (result, reject) {
+//   navigator.geolocation.getCurrentPosition(result, reject);
+// }) // Когда нам не нужно присваивать ничего лишнего в result, а нужно просто дать результат, то можно и не создавать конструкцию  CallBack функции. Просто написать само ключевое слово из Promise и все.
+//   .then(function (data) {
+//     console.log(data);
+//   });
+
+// ! Async/Await переделать в
+function renderCards(data, className = '') {
+  const html = `<article class="country ${className}">
+          <img class="country__img" src="${data.flags.svg}" />
+          <div class="country__data">
+            <h3 class="country__name">${data.name.common}</h3>
+            <h4 class="country__region">${data.region}</h4>
+            <p class="country__row"><span>👫</span>${data.population}</p>
+            <p class="country__row"><span>🗣️</span>${
+              Object.entries(data.languages)[0][1]
+            }</p>
+            <p class="country__row"><span>💰</span>${
+              Object.entries(Object.entries(data.currencies)[0][1])[0][1]
+            }</p>
+          </div>
+        </article>`;
+  countriesContainer.insertAdjacentHTML('beforeend', html);
+}
+
+// Рендер ошибки в HTML
+function renderError(message) {
+  countriesContainer.insertAdjacentHTML('beforeend', message);
+}
+
+// Функция fetch с пробросом ошибки
+async function getJSON(url, errorMsg = 'Что-то пошло не так. ') {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`${errorMsg} ${response.status})`);
+  }
+  return response.json();
+}
+
+async function getCountryData(country) {
+  // Страна, и сообщение если страна не найдена
   try {
-    const res = await fetch(`https://restcountries.com/v3.1/name/${country}`);
-    if (!res.ok) {
-      throw new Error("У вас нет интернета");
+    const data = await getJSON(
+      `https://restcountries.com/v3.1/name/${country}`,
+      'Что-то пошло не так. Вероятно в названии страны допущена ошибка'
+    );
+    renderCards(data[0]);
+    // Страны соседи
+    const neighboursData = data[0].borders;
+    if (!neighboursData) {
+      throw new Error(`соседних стран нет`);
     }
-    const data = await res.json();
-
-    return `Ваша страна ${data[0].name.common}`;
+    // Сделаем через Promise.all для одновременных запросов по каждому соседу. Массив для PromiseReults каждой соседней страны
+    const neighboursFetches = neighboursData.map((neighbour) =>
+      getJSON(`https://restcountries.com/v3.1/alpha/${neighbour}`)
+    );
+    const neighbours = await Promise.all(neighboursFetches);
+    for (const neighbourTitle of neighbours) {
+      const [res] = neighbourTitle;
+      renderCards(res, 'neighbour');
+    }
   } catch (err) {
-    throw new Error("Что-то пошло не так");
+    renderError(`Что-то пошло не так из-за ошибки - ${err.message}.`);
+  } finally {
+    countriesContainer.style.opacity = 1;
   }
 }
-// getCountry("usa");
 
-btn.addEventListener("click", function () {
-  getCountry("usa");
-});
+// ! Выведем несколько столиц. ПАРАЛЛЕЛЬНЫЙ Async/Await
+// async function get3Capital(c1, c2, c3) {
+//   try {
+//     const data = await Promise.all([
+//       fetch(`https://restcountries.com/v3.1/name/${c1}`).then(function (
+//         response
+//       ) {
+//         return response.json();
+//       }),
+//       fetch(`https://restcountries.com/v3.1/name/${c2}`).then(function (
+//         response
+//       ) {
+//         return response.json();
+//       }),
+//       fetch(`https://restcountries.com/v3.1/name/${c3}`).then(function (
+//         response
+//       ) {
+//         return response.json();
+//       }),
+//     ]);
+//     console.log(data.map((val) => val[0].capital.join(''))); // (3) ['Washington, D.C.', 'Ankara', 'Paris']
+//   } catch (err) {
+//     console.log(err);
+//   }
+// }
+// get3Capital('usa', 'turkey', 'france');
+/*
 
-const cont = getCountry("usa");
-console.log(cont);
+Если отключим интернет и нажмем на кнопку, то укажет на ошибку в Fetch - Uncaught (in promise)
+Нам нужно отловить эту ошибку
+ПЕРВЫЙ THEN имеет 2 параметра - 1-func что будет в ответе от URL, 2-функция на случай если нет ответа от URL и будет обрабатывать ошибки
+Выведем в консоль, получаем не красное уведомление
+TypeError: Failed to fetch
+Копируем и вставляем эти обработки ошибок в первые .then
+Но так долго, нудно, ебано, повторяющийся код. Есть способ убрать повторения обработки ошибок - CATCH
 
-// Возврат данных через .then.catch
-getCountry("usa")
-  .then(function (response) {
-    console.log(response);
-  })
-  .catch(function (err) {
-    console.log(err);
-  });
+ИСПОЛЬЗУЕМ .CATCH после последнего then первого fetch ЧЕРЕЗ ТОЧЕЧНУЮ ЗАПИСЬ, т.е. цепочкой (если внутри вложенные есть, в противном случае после каждого последнего)
+Так в консоли тоже выводятся отловленные ошибки.
+Теперь добавим инфу для пользователя
 
-// Возврат данных с помощью async/awiat
-(async function () {
-  try {
-    const city = await getCountry("usa");
-    console.log(city);
-  } catch (err) {
-    console.log(err);
-  }
-})();
+Создадим отдельную функцию, которая будет обрабатывать ошибку и будем вставлять ее в этот CATCH
 
-// Promise.all()
-async function get3Capital(c1, c2, c3) {
-  try {
-    // const response1 = await fetch(`https://restcountries.com/v3.1/name/${c1}`);
-    // const [data1] = await response1.json();
+.FINALLY - метод с callback, который выполнится в любом случае, не важно, был положительный или отрицательный ответ от сервера.
+Запись опять, как у THEN и у CATCH точечная
+Туда можем складывать все то, что имеет повторения и не зависит от ошибок. В нашем случае это присвоение прозрачности объекту
+  countriesContainer.style.opacity = 1;
 
-    // const response2 = await fetch(`https://restcountries.com/v3.1/name/${c2}`);
-    // const [data2] = await response2.json();
-
-    // const response3 = await fetch(`https://restcountries.com/v3.1/name/${c3}`);
-    // const [data3] = await response3.json();
-
-    const data = await Promise.all([
-      fetch(`https://restcountries.com/v3.1/name/${c1}`).then((res) =>
-        res.json()
-      ),
-      fetch(`https://restcountries.com/v3.1/name/${c2}`).then((res) =>
-        res.json()
-      ),
-      fetch(`https://restcountries.com/v3.1/name/${c3}`).then((res) =>
-        res.json()
-      ),
-    ]);
-    const dataAll = data.map(function (val) {
-      return val[0].capital[0];
-    });
-    console.log(dataAll);
-  } catch (err) {
-    console.log(err);
-  }
-}
-get3Capital("belarus", "russia", "turkey");
-
-/* 
-todo 13-17 Доп методы параллельного кода
-метод Promise.race() позволяет взять несколько запросов, но вернется самый быстрый из выполненных
-Также как и All принимает в себя массив, потому что мы передаем несколько запросов
-При вызове результата в консоль, res[0] (или res, не важно), выйдет самый быстрый результат
-Чем может быть полезен -
-тогда, когда данные пользователь пытается получить, они идут слишком долго или у него плохое интернет соединение
-И мы как программисты должны решать эту проблему, если загрузка идет слишком долго
-Как это сделать?!
-Нужно создать свой собственный запрос, например запрос на 3 сек. И этот запрос нужно поместить в этот Promise.race. Тем самым  сработает либо функция которая загрузит данные, либо функция, которая сработает после 5 сек и выведет сообщение, что вы ждали слишком долго.
-Создадим функцию timeout(sec)
-Затем создадим еще один Promise.race, скопируем туда первый fetch из const res = await Promise.race()
-Там сравним этот скопированный fetch и timeout. Также применим к этому race.then.catch
+Все заебись, все работает
 
 
-* Следующий метод Promise.allSettled()
-Оч похоже на Promise.all()
-Но в отличие от него вернет результат промисов, которые были выполнены, вне зависимости от того будет ли какой-либо из промисов отклонен
-! В Promise.all(), если один из промисов будет отклонен, то остальное тоже работать не будет 
-В консоли Promise.allSettled работает и выдает результат массива даже с отрицательным promise
-А в Promise.all не вывел массив, но выдал только ошибку
+Если название страны неверное, то будет ошибка - сервер не сможет понять и выдаст ошибку 404. Чтобы этого избежать, нужно использовать обработку этой ошибки **в ПЕРВОМ THEN функции FETCH**
+Добавляем строки по условию
 
-* Следующий метод Promise.any()
-Возвращает первый выполненный Promise
-Вернул "Выполнен", даже если в списке есть отклоненные
-Но если все promise будут отклонены, то будет ошибка
+Немного раздражает, что есть повторающийся then. Чуть поколдуем - создадим функцию помощник
+function getJSON.
+Вставим туда url, первый then и затем эту функцию везде, где были первые then
+
+И последнее - обработаем ошибку, если у страны нет соседей вовсе.
 */
-
-// Promise.race()
-(async function () {
-  const res = await Promise.race([
-    fetch(`https://restcountries.com/v3.1/name/usa`).then((res) => res.json()),
-    fetch(`https://restcountries.com/v3.1/name/japan`).then((res) =>
-      res.json()
-    ),
-    fetch(`https://restcountries.com/v3.1/name/canada`).then((res) =>
-      res.json()
-    ),
-  ]);
-  console.log(res); // Первым сработал Japan, во второй раз USA
-})();
-
-function timeout(sec) {
-  return new Promise((_, reject) => {
-    setTimeout(() => {
-      reject(new Error(`Ожидание превысило ${sec} секунд`));
-    }, sec * 1000);
-  });
-}
-Promise.race([
-  fetch(`https://restcountries.com/v3.1/name/usa`).then((res) => res.json()),
-  timeout(0.4),
-])
-  .then((res) => console.log(res[0]))
-  .catch((err) => console.log(err)); // Ожидание превысило 0.4 секунд
-
-// Promise.allSettled()
-Promise.allSettled([
-  Promise.resolve("Выполнен"),
-  Promise.reject("Отклонен"),
-  Promise.resolve("Еще один Выполнен"),
-]).then((res) => console.log(res));
-
-// Сравним с Promise.all()
-// Promise.all([
-//   Promise.resolve("Выполнен"),
-//   Promise.reject("Отклонен"),
-//   Promise.resolve("Еще один Выполнен"),
-// ]).then((res) => console.log(res));
-
-// Promise.any()
-Promise.any([
-  Promise.resolve("Выполнен"),
-  Promise.reject("Отклонен"),
-  Promise.resolve("Еще один Выполнен"),
-]).then((res) => console.log(res));
