@@ -209,17 +209,21 @@ function getCountryByLocation() {
           console.log(data[0]);
           renderCards(data[0]);
           // Страна сосед и обработка если нет соседних стран
-          const neighbourData = data[0].borders;
-          if (!neighbourData) {
+          const neighboursData = data[0].borders;
+          console.log(neighboursData);
+          if (!neighboursData) {
             throw new Error(`соседних стран нет`);
           }
-          const neighbour = data[0].borders[0];
-          return getJSON(
-            `https://restcountries.com/v3.1/alpha/${neighbour}`
-          ).then((data) => {
-            const [res] = data;
+          const neighboursFetches = neighboursData.map((neighbour) =>
+            getJSON(`https://restcountries.com/v3.1/alpha/${neighbour}`)
+          );
+          return Promise.all(neighboursFetches);
+        })
+        .then((neighbours) => {
+          for (const neighbourTitle of neighbours) {
+            const [res] = neighbourTitle;
             renderCards(res, 'neighbour');
-          });
+          }
         })
         .catch(function (err) {
           renderError(`Что-то пошло не так из-за ошибки ${err.message}.`);
@@ -300,3 +304,10 @@ btn.addEventListener('click', () => {
 //     countriesContainer.style.opacity = 1;
 //   }
 // }
+
+async function georgiaInfo() {
+  const response = await fetch('https://restcountries.com/v3.1/name/georgia');
+  const data = await response.json();
+  console.log(data);
+}
+georgiaInfo();
