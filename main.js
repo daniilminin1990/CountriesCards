@@ -38,7 +38,7 @@ async function getAllCountriesName() {
   const data = await response.json();
 
   countryNames = data.map((country) => {
-    return country.name.common;
+    return [country.name.common, country.translations.rus.common];
   });
 
   // country.translations.rus.common,
@@ -55,10 +55,16 @@ function onInputChange() {
 
   if (value.length === 0) return;
 
+  // Идентификация языка при вводе в input
+  const language = /[А-Яа-яЁё]/i.test(inputEl.value) ? 1 : 0;
+
   const filteredNames = [];
+  // ! Выводится только на английском
   for (let countryName of countryNames) {
-    if (countryName.substring(0, value.length).toLowerCase() === value) {
-      filteredNames.push(countryName);
+    if (
+      countryName[language].substring(0, value.length).toLowerCase() === value
+    ) {
+      filteredNames.push(countryName[0]);
     }
   }
   console.log(filteredNames);
