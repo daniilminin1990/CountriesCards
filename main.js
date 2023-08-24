@@ -9,8 +9,8 @@ const dropdown = document.querySelector('.dropdown');
 
 // ! ВНИМАНИЕ . УДАЛИ API ключ после auth= при релизе
 
-// Fetch all countries
-// const arrOfAllCountriesName = [];
+// Получение массива названий стран на английском и русском Fetch
+// const countryNames = [];
 // function getAllCountries() {
 //   fetch(`https://restcountries.com/v3.1/all`)
 //     .then((response) => {
@@ -20,7 +20,7 @@ const dropdown = document.querySelector('.dropdown');
 //       data;
 //       console.log(data);
 //       for (const country of data) {
-//         arrOfAllCountries.push([
+//         countryNames.push([
 //           country.name.common,
 //           country.translations.rus.common,
 //         ]);
@@ -28,10 +28,9 @@ const dropdown = document.querySelector('.dropdown');
 //     });
 // }
 // getAllCountriesName();
-// console.log(arrOfAllCountries);
+// console.log(countryNames);
 
-// Async await all countries
-
+// Получение массива названий стран на английском и русском Async/Await
 let countryNames = [];
 async function getAllCountriesName() {
   const response = await fetch(`https://restcountries.com/v3.1/all`);
@@ -40,8 +39,6 @@ async function getAllCountriesName() {
   countryNames = data.map((country) => {
     return [country.name.common, country.translations.rus.common];
   });
-
-  // country.translations.rus.common,
 }
 getAllCountriesName();
 
@@ -57,14 +54,13 @@ function onInputChange() {
 
   // Идентификация языка при вводе в input
   const language = /[А-Яа-яЁё]/i.test(inputEl.value) ? 1 : 0;
-
   const filteredNames = [];
   // ! Выводится только на английском
-  for (let countryName of countryNames) {
+  for (const countryName of countryNames) {
     if (
       countryName[language].substring(0, value.length).toLowerCase() === value
     ) {
-      filteredNames.push(countryName[0]);
+      filteredNames.push(countryName[language]);
     }
   }
   console.log(filteredNames);
@@ -100,10 +96,23 @@ function removeAutocompleteDropdown() {
 function onCountryButtonClick(e) {
   e.preventDefault();
   const buttonEl = e.target;
-  inputEl.value = buttonEl.innerHTML;
 
-  getCountryData(inputEl.value);
-  // Удаляем предыдущие загруженные карточки
+  // inputEl.value = buttonEl.innerHTML;
+
+  function getEnglishName() {
+    const language = /[А-Яа-яЁё]/i.test(inputEl.value) ? 1 : 0;
+    const translated = countryNames.find(([englishName, russianName]) => {
+      if (language === 1) {
+        return russianName === inputEl.value;
+      } else {
+        return englishName === inputEl.value;
+      }
+    });
+    return translated[0];
+  }
+
+  getCountryData(getEnglishName());
+  // Удаляем предыдущие загруженные карточки и dropdown
   countriesContainer.innerHTML = '';
   removeAutocompleteDropdown();
 }
