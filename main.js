@@ -247,6 +247,9 @@ function getCountryByLocation() {
 }
 
 btn.addEventListener('click', () => {
+  // Удаляем предыдущие загруженные карточки и dropdown
+  countriesContainer.innerHTML = '';
+  removeAutocompleteDropdown();
   getCountryByLocation();
 });
 
